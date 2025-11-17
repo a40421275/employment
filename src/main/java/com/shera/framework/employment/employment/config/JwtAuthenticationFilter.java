@@ -107,6 +107,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return true;
         }
         
+        // 签名URL文件访问接口
+        if (path.startsWith("/api/files/signed/")) {
+            return true;
+        }
+        
         // Swagger UI 相关路径
         if (path.startsWith("/swagger-ui") || 
             path.startsWith("/v3/api-docs") || 

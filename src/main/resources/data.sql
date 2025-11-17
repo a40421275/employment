@@ -476,7 +476,7 @@ INSERT IGNORE INTO `system_config` (`config_key`, `config_value`, `description`,
 ('file.upload.allowed_types', 'jpg,jpeg,png,gif,pdf,doc,docx,txt', '允许上传的文件类型', 'file', 'STRING', 1, 0, 3, '', 'jpg,jpeg,png,gif,pdf,doc,docx,txt', ''),
 ('file.upload.storage_type', 'local', '文件存储类型', 'file', 'STRING', 1, 0, 4, '', 'local', '["local","oss","cos"]'),
 ('file.upload.storage_path', 'E:/data/', '文件存储路径', 'file', 'STRING', 1, 0, 5, '', 'uploads/', ''),
-('file_download_signer.expiry_seconds', '3600', '文件下载过期时间（秒）', 'file', 'INTEGER', 1, 0, 5, 'min:1', '3600', ''),
+('file_download_signer.expiry_seconds', '60', '文件下载过期时间（秒）', 'file', 'INTEGER', 1, 0, 5, 'min:1', '60', ''),
 ('file.upload.cleanup_days', '30', '临时文件清理天数', 'file', 'INTEGER', 1, 0, 6, 'min:1|max:365', '30', '');
 
 -- 插入文件表测试数据

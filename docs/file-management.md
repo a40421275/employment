@@ -1,579 +1,591 @@
-# 文件管理模块 (FileController)
+# 文件管理模块
 
-**基础路径**: `/api/files`
+## 概述
 
-## 接口列表
+文件管理模块为就业服务平台提供统一的文件上传、下载、存储和管理功能。支持多种文件类型，包括简历、头像、企业Logo、岗位附件等，并提供文件版本管理、权限控制、重复文件检测等高级功能。
 
-### 上传文件
-- **URL**: `POST /upload`
-- **请求参数**:
-  | 参数名 | 位置 | 数据类型 | 必填 | 说明 |
-  |--------|------|----------|------|------|
-  | file | 表单 | MultipartFile | 是 | 上传的文件 |
-  | userId | 表单 | Long | 是 | 用户ID |
-  | fileType | 表单 | String | 是 | 文件类型：resume/avatar/id_card/other |
-  | description | 表单 | String | 否 | 文件描述 |
-  | tags | 表单 | String | 否 | 文件标签，逗号分隔 |
-- **响应参数**:
-  ```json
-  {
-    "code": 200,
-    "message": "上传成功",
-    "data": {
-      "id": 1,
-      "fileName": "example.pdf",
-      "fileSize": 1024000,
-      "fileType": "resume",
-      "fileUrl": "/files/download/1",
-      "uploadTime": "2025-11-08T12:00:00"
-    }
-  }
-  ```
-- **功能**: 上传文件
+## 功能特性
 
-### 批量上传文件
-- **URL**: `POST /batch-upload`
-- **请求参数**:
-  | 参数名 | 位置 | 数据类型 | 必填 | 说明 |
-  |--------|------|----------|------|------|
-  | files | 表单 | List<MultipartFile> | 是 | 上传的文件列表 |
-  | userId | 表单 | Long | 是 | 用户ID |
-  | fileType | 表单 | String | 是 | 文件类型：resume/avatar/id_card/other |
-  | descriptions | 表单 | List<String> | 否 | 文件描述列表 |
-- **响应参数**:
-  ```json
-  {
-    "code": 200,
-    "message": "批量上传成功",
-    "data": {
-      "successCount": 5,
-      "failedCount": 0,
-      "failedFiles": [],
-      "uploadedFiles": [
-        {
-          "id": 1,
-          "fileName": "file1.pdf",
-          "fileSize": 1024000,
-          "fileType": "resume",
-          "fileUrl": "/files/download/1"
-        }
-      ]
-    }
-  }
-  ```
-- **功能**: 批量上传文件
+### 核心功能
+- **两步式文件上传**: 支持文件池上传和附件创建分离
+- **文件下载**: 支持文件下载
+- **文件管理**: 支持文件删除和查询
+- **临时文件管理**: 支持临时文件上传和绑定业务
+- **文件验证**: 支持文件类型和大小验证
+- **文件池管理**: 支持文件哈希查找和存储统计
+- **签名URL访问**: 支持无需认证的签名URL文件访问
 
-### 下载文件
-- **URL**: `GET /download/{id}`
-- **请求参数**:
-  | 参数名 | 位置 | 数据类型 | 必填 | 说明 |
-  |--------|------|----------|------|------|
-  | id | 路径 | Long | 是 | 文件ID |
-- **响应参数**: 文件流
-- **功能**: 下载文件
+### 高级功能
+- **重复文件检测**: 基于文件哈希值避免重复上传
+- **过期文件清理**: 自动清理临时和过期文件
+- **文件池管理**: 支持文件引用计数和清理
+- **签名URL安全**: 支持带时效性的签名URL访问
 
-### 获取文件信息
-- **URL**: `GET /{id}`
-- **请求参数**:
-  | 参数名 | 位置 | 数据类型 | 必填 | 说明 |
-  |--------|------|----------|------|------|
-  | id | 路径 | Long | 是 | 文件ID |
-- **响应参数**:
-  ```json
-  {
-    "code": 200,
-    "message": "获取成功",
-    "data": {
-      "id": 1,
-      "fileName": "example.pdf",
-      "fileSize": 1024000,
-      "fileType": "resume",
-      "fileUrl": "/files/download/1",
+## 数据库设计
+
+### 文件表 (file)
+
+| 字段名 | 类型 | 描述 | 约束 |
+|--------|------|------|------|
+| id | BIGINT | 文件ID | 主键，自增 |
+| file_name | VARCHAR(255) | 存储文件名 | 非空 |
+| original_name | VARCHAR(255) | 原始文件名 | 非空 |
+| file_path | VARCHAR(500) | 文件存储路径 | 非空 |
+| file_size | BIGINT | 文件大小(字节) | 非空 |
+| file_type | VARCHAR(50) | 文件类型 | 非空 |
+| mime_type | VARCHAR(100) | MIME类型 | 非空 |
+| file_extension | VARCHAR(20) | 文件扩展名 | 非空 |
+| file_hash | VARCHAR(64) | 文件哈希值 | 唯一索引 |
+| creator_user_id | BIGINT | 创建用户ID | 外键 |
+| reference_count | INT | 引用次数 | 默认0 |
+| status | TINYINT | 文件状态 | 默认1 |
+| last_access_time | DATETIME | 最后访问时间 | 可为空 |
+| create_time | DATETIME | 创建时间 | 非空 |
+| update_time | DATETIME | 更新时间 | 非空 |
+
+### 文件状态定义
+- `0`: 草稿
+- `1`: 正常
+- `2`: 已删除
+- `3`: 已过期
+
+### 文件类型定义
+- `image`: 图片文件（如头像、Logo、身份证照片等）
+- `document`: 文档文件（如简历、岗位附件、PDF文档等）
+- `other`: 其他文件类型
+
+### 业务类型定义 (businessType)
+业务类型由各业务模块自定义，用于标识附件所属的业务模块。通过**业务类型 + 业务ID + 文件类型**三个字段唯一定位文件归属。
+
+**设计原则**
+- 业务类型由各业务模块自行定义和保障唯一性
+- 系统不预定义业务类型枚举，支持动态扩展
+- 各业务模块负责维护自己使用的业务类型标识
+
+**使用示例**
+- 业务类型=`user_avatar`, 业务ID=`123`, 文件类型=`image` → 用户123的头像
+- 业务类型=`user_id_card`, 业务ID=`123`, 文件类型=`image` → 用户123的身份证
+- 业务类型=`company_logo`, 业务ID=`456`, 文件类型=`image` → 企业456的Logo
+- 业务类型=`job_attachment`, 业务ID=`789`, 文件类型=`document` → 岗位789的附件
+
+**建议规范**
+- 业务类型格式：`{模块名}_{用途名}`
+- 各模块应在自己的文档中明确使用的业务类型
+- 业务类型应具有唯一性和可读性
+
+## API接口
+
+### 两步式上传绑定方案
+
+#### 第一步：上传文件到文件池
+将文件上传到文件池，返回文件ID。
+
+```http
+POST /api/files/upload/pool
+Content-Type: multipart/form-data
+
+参数:
+- file: 文件 (必填)
+- userId: 用户ID (必填)
+- fileType: 文件类型 (必填)
+```
+
+响应:
+```json
+{
+  "code": 200,
+  "message": "文件上传到文件池成功",
+  "data": {
+    "fileId": 1
+  },
+  "timestamp": "2025-11-17T00:54:23"
+}
+```
+
+#### 第二步：创建附件记录
+将文件池中的文件绑定到具体业务，创建附件记录。
+
+```http
+POST /api/files/create/attachment
+Content-Type: application/json
+
+参数:
+{
+  "fileId": 1,
+  "userId": 1,
+  "businessType": "resume",
+  "businessId": 123,
+  "description": "求职简历",
+  "tags": "简历,求职,Java",
+  "isPublic": false
+}
+```
+
+响应:
+```json
+{
+  "code": 200,
+  "message": "附件创建成功",
+  "data": {
+    "attachmentId": 1
+  },
+  "timestamp": "2025-11-17T00:54:23"
+}
+```
+
+#### 便捷方法：上传并创建附件
+一步完成文件上传和附件创建。
+
+```http
+POST /api/files/upload/attachment
+Content-Type: multipart/form-data
+
+参数:
+- file: 文件 (必填)
+- userId: 用户ID (必填)
+- fileType: 文件类型 (必填)
+- businessType: 业务类型 (必填)
+- businessId: 业务ID (必填)
+- description: 文件描述 (可选)
+- tags: 文件标签 (可选)
+- isPublic: 是否公开 (可选，默认false)
+```
+
+响应:
+```json
+{
+  "code": 200,
+  "message": "文件上传和附件创建成功",
+  "data": {
+    "attachmentId": 1
+  },
+  "timestamp": "2025-11-17T00:54:23"
+}
+```
+
+### 签名URL方案
+
+签名URL方案用于解决前端图片无法添加认证参数的问题，通过生成带有时效性和签名的URL，允许前端无需认证即可访问图片文件。
+
+#### 生成签名文件URL（用于前端图片访问）
+```http
+GET /api/files/signed/generate/{attachmentId}
+```
+
+响应:
+```json
+{
+  "code": 200,
+  "message": "生成签名URL成功",
+  "data": {
+    "signedUrl": "/api/files/signed/?attachmentId=123&expires=1700000000&signature=abc123def456...",
+    "attachmentId": 123
+  },
+  "timestamp": "2025-11-17T00:54:23"
+}
+```
+
+### 临时文件管理
+
+#### 上传临时文件（7天过期）
+```http
+POST /api/files/upload/temporary
+Content-Type: multipart/form-data
+
+参数:
+- file: 文件 (必填)
+- userId: 用户ID (必填)
+- fileType: 文件类型 (必填)
+```
+
+响应:
+```json
+{
+  "code": 200,
+  "message": "临时文件上传成功",
+  "data": {
+    "attachmentId": 1,
+    "isTemporary": true,
+    "expireDays": 7
+  },
+  "timestamp": "2025-11-17T00:54:23"
+}
+```
+
+#### 绑定临时文件到业务
+将临时文件绑定到具体业务，使其成为正式文件。
+
+```http
+POST /api/files/bind/temporary
+Content-Type: application/json
+
+参数:
+{
+  "attachmentId": 1,
+  "businessType": "resume",
+  "businessId": 123,
+  "description": "求职简历",
+  "tags": "简历,求职,Java",
+  "isPublic": false
+}
+```
+
+响应:
+```json
+{
+  "code": 200,
+  "message": "临时文件绑定业务成功",
+  "data": {
+    "success": true
+  },
+  "timestamp": "2025-11-17T00:54:23"
+}
+```
+
+### 核心文件操作
+
+#### 下载文件
+```http
+GET /api/files/download/{attachmentId}
+```
+
+响应: 文件二进制流
+
+#### 获取文件信息
+```http
+GET /api/files/{attachmentId}
+```
+
+响应:
+```json
+{
+  "code": 200,
+  "message": "获取文件信息成功",
+  "data": {
+    "attachmentId": 1,
+    "fileName": "1_avatar_1700000000000_123.jpg",
+    "originalName": "avatar.jpg",
+    "fileSize": 102400,
+    "fileType": "avatar",
+    "mimeType": "image/jpeg",
+    "fileExtension": "jpg",
+    "userId": 1,
+    "businessType": "avatar",
+    "createTime": "2024-01-01T00:00:00",
+    "updateTime": "2024-01-01T00:00:00",
+    "fileUrl": "/api/files/download/1"
+  },
+  "timestamp": "2025-11-17T00:54:23"
+}
+```
+
+#### 删除文件
+```http
+DELETE /api/files/{attachmentId}
+```
+
+响应:
+```json
+{
+  "code": 200,
+  "message": "文件删除成功",
+  "data": {
+    "success": true
+  },
+  "timestamp": "2025-11-17T00:54:23"
+}
+```
+
+#### 获取用户文件列表
+```http
+GET /api/files/user/{userId}
+参数:
+- businessType: 业务类型 (可选)
+```
+
+响应:
+```json
+{
+  "code": 200,
+  "message": "获取用户文件列表成功",
+  "data": [
+    {
+      "attachmentId": 1,
+      "fileName": "1_avatar_1700000000000_123.jpg",
+      "originalName": "avatar.jpg",
+      "fileSize": 102400,
+      "fileType": "avatar",
+      "mimeType": "image/jpeg",
       "userId": 1,
-      "description": "个人简历",
-      "tags": "简历,PDF",
-      "uploadTime": "2025-11-08T12:00:00",
+      "businessType": "avatar",
+      "createTime": "2024-01-01T00:00:00",
+      "updateTime": "2024-01-01T00:00:00",
+      "fileUrl": "/api/files/download/1"
+    }
+  ],
+  "timestamp": "2025-11-17T00:54:23"
+}
+```
+
+#### 根据业务类型和业务ID获取附件列表
+```http
+GET /api/files/business
+参数:
+- businessType: 业务类型 (必填)
+- businessId: 业务ID (必填)
+- fileType: 文件类型 (可选)
+```
+
+响应:
+```json
+{
+  "code": 200,
+  "message": "获取业务附件列表成功",
+  "data": [
+    {
+      "attachmentId": 1,
+      "fileName": "1_resume_1700000000000_123.pdf",
+      "originalName": "张三_简历.pdf",
+      "fileSize": 204800,
+      "fileType": "resume",
+      "mimeType": "application/pdf",
+      "userId": 1,
+      "businessType": "resume",
+      "businessId": 123,
+      "description": "求职简历",
+      "tags": "简历,求职,Java",
       "downloadCount": 5,
-      "status": 1
+      "viewCount": 15,
+      "isPublic": false,
+      "isTemporary": false,
+      "createTime": "2024-01-01T00:00:00",
+      "updateTime": "2024-01-01T00:00:00",
+      "fileUrl": "/api/files/download/1",
+      "downloadable": true,
+      "expired": false
     }
-  }
-  ```
-- **功能**: 获取文件信息
+  ],
+  "timestamp": "2025-11-17T00:54:23"
+}
+```
 
-### 删除文件
-- **URL**: `DELETE /{id}`
-- **请求参数**:
-  | 参数名 | 位置 | 数据类型 | 必填 | 说明 |
-  |--------|------|----------|------|------|
-  | id | 路径 | Long | 是 | 文件ID |
-- **响应参数**:
-  ```json
-  {
-    "code": 200,
-    "message": "删除成功",
-    "data": null
-  }
-  ```
-- **功能**: 删除文件
+#### 检查文件是否存在
+```http
+GET /api/files/exists/{attachmentId}
+```
 
-### 获取文件列表
-- **URL**: `GET /`
-- **请求参数**:
-  | 参数名 | 位置 | 数据类型 | 必填 | 说明 |
-  |--------|------|----------|------|------|
-  | page | 查询 | Integer | 否 | 页码，从0开始，默认0 |
-  | size | 查询 | Integer | 否 | 每页大小，默认20 |
-  | sort | 查询 | String | 否 | 排序字段，如：uploadTime |
-  | direction | 查询 | String | 否 | 排序方向：ASC/DESC，默认DESC |
-- **响应参数**:
-  ```json
-  {
-    "code": 200,
-    "message": "获取成功",
-    "data": {
-      "content": [
-        {
-          "id": 1,
-          "fileName": "example.pdf",
-          "fileSize": 1024000,
-          "fileType": "resume",
-          "fileUrl": "/files/download/1",
-          "userId": 1,
-          "uploadTime": "2025-11-08T12:00:00",
-          "downloadCount": 5
-        }
-      ],
-      "totalElements": 100,
-      "totalPages": 5,
-      "size": 20,
-      "number": 0
-    }
-  }
-  ```
-- **功能**: 获取文件列表
+响应:
+```json
+{
+  "code": 200,
+  "message": "检查文件存在成功",
+  "data": {
+    "exists": true
+  },
+  "timestamp": "2025-11-17T00:54:23"
+}
+```
 
-### 根据用户获取文件
-- **URL**: `GET /user/{userId}`
-- **请求参数**:
-  | 参数名 | 位置 | 数据类型 | 必填 | 说明 |
-  |--------|------|----------|------|------|
-  | userId | 路径 | Long | 是 | 用户ID |
-  | page | 查询 | Integer | 否 | 页码，从0开始，默认0 |
-  | size | 查询 | Integer | 否 | 每页大小，默认20 |
-  | fileType | 查询 | String | 否 | 文件类型：resume/avatar/id_card/other |
-  | status | 查询 | Integer | 否 | 文件状态：1-正常，2-已删除 |
-- **响应参数**:
-  ```json
-  {
-    "code": 200,
-    "message": "获取成功",
-    "data": {
-      "content": [
-        {
-          "id": 1,
-          "fileName": "example.pdf",
-          "fileSize": 1024000,
-          "fileType": "resume",
-          "fileUrl": "/files/download/1",
-          "uploadTime": "2025-11-08T12:00:00",
-          "downloadCount": 5
-        }
-      ],
-      "totalElements": 50,
-      "totalPages": 3,
-      "size": 20,
-      "number": 0
-    }
-  }
-  ```
-- **功能**: 根据用户获取文件
+#### 获取文件URL
+```http
+GET /api/files/url/{attachmentId}
+```
 
-### 根据类型获取文件
-- **URL**: `GET /type/{fileType}`
-- **请求参数**:
-  | 参数名 | 位置 | 数据类型 | 必填 | 说明 |
-  |--------|------|----------|------|------|
-  | fileType | 路径 | String | 是 | 文件类型：resume/avatar/id_card/other |
-  | page | 查询 | Integer | 否 | 页码，从0开始，默认0 |
-  | size | 查询 | Integer | 否 | 每页大小，默认20 |
-  | userId | 查询 | Long | 否 | 用户ID |
-- **响应参数**:
-  ```json
-  {
-    "code": 200,
-    "message": "获取成功",
-    "data": {
-      "content": [
-        {
-          "id": 1,
-          "fileName": "example.pdf",
-          "fileSize": 1024000,
-          "fileType": "resume",
-          "fileUrl": "/files/download/1",
-          "userId": 1,
-          "uploadTime": "2025-11-08T12:00:00"
-        }
-      ],
-      "totalElements": 30,
-      "totalPages": 2,
-      "size": 20,
-      "number": 0
-    }
-  }
-  ```
-- **功能**: 根据类型获取文件
+响应:
+```json
+{
+  "code": 200,
+  "message": "获取文件URL成功",
+  "data": {
+    "url": "/api/files/download/1"
+  },
+  "timestamp": "2025-11-17T00:54:23"
+}
+```
 
-### 搜索文件
-- **URL**: `GET /search`
-- **请求参数**:
-  | 参数名 | 位置 | 数据类型 | 必填 | 说明 |
-  |--------|------|----------|------|------|
-  | keyword | 查询 | String | 是 | 搜索关键词 |
-  | page | 查询 | Integer | 否 | 页码，从0开始，默认0 |
-  | size | 查询 | Integer | 否 | 每页大小，默认20 |
-  | fileType | 查询 | String | 否 | 文件类型：resume/avatar/id_card/other |
-  | userId | 查询 | Long | 否 | 用户ID |
-- **响应参数**:
-  ```json
-  {
-    "code": 200,
-    "message": "搜索成功",
-    "data": {
-      "content": [
-        {
-          "id": 1,
-          "fileName": "example.pdf",
-          "fileSize": 1024000,
-          "fileType": "resume",
-          "fileUrl": "/files/download/1",
-          "userId": 1,
-          "uploadTime": "2025-11-08T12:00:00"
-        }
-      ],
-      "totalElements": 25,
-      "totalPages": 2,
-      "size": 20,
-      "number": 0
-    }
-  }
-  ```
-- **功能**: 搜索文件
+#### 统一查询附件列表（支持分页和复杂条件查询）
+```http
+POST /api/files/query
+Content-Type: application/json
 
-### 更新文件信息
-- **URL**: `PUT /{id}`
-- **请求参数**:
-  | 参数名 | 位置 | 数据类型 | 必填 | 说明 |
-  |--------|------|----------|------|------|
-  | id | 路径 | Long | 是 | 文件ID |
-  | FileDTO | 请求体 | Object | 是 | 文件信息对象 |
-- **响应参数**:
-  ```json
-  {
-    "code": 200,
-    "message": "更新成功",
-    "data": {
-      "id": 1,
-      "fileName": "example.pdf",
-      "description": "更新后的文件描述",
-      "tags": "简历,PDF,更新",
-      "status": 1
-    }
-  }
-  ```
-- **功能**: 更新文件信息
+参数:
+{
+  "page": 0,
+  "size": 20,
+  "userId": 1,
+  "businessType": "resume",
+  "businessId": 123,
+  "fileType": "pdf",
+  "fileExtension": "pdf",
+  "keyword": "简历",
+  "status": 1,
+  "isPublic": false,
+  "isTemporary": false,
+  "tags": "简历,求职",
+  "startTime": "2024-01-01",
+  "endTime": "2024-12-31",
+  "minFileSize": 1024,
+  "maxFileSize": 10485760,
+  "sortField": "createTime",
+  "sortDirection": "DESC"
+}
+```
 
-### 获取文件统计
-- **URL**: `GET /stats`
-- **响应参数**:
-  ```json
-  {
-    "code": 200,
-    "message": "获取成功",
-    "data": {
-      "totalFiles": 1000,
-      "totalSize": 1024000000,
-      "fileTypes": {
-        "resume": 500,
-        "avatar": 200,
-        "id_card": 100,
-        "other": 200
-      },
-      "dailyUploadCount": 50,
-      "weeklyUploadCount": 350,
-      "monthlyUploadCount": 1000,
-      "totalDownloadCount": 5000,
-      "averageFileSize": 1024000
-    }
-  }
-  ```
-- **功能**: 获取文件统计
+参数说明:
+- `page`: 页码，从0开始（可选，默认0）
+- `size`: 每页大小（可选，默认20）
+- `userId`: 用户ID（可选）
+- `businessType`: 业务类型（可选，支持：resume、avatar、id_card、company_logo、job_attachment、other）
+- `businessId`: 业务ID（可选）
+- `fileType`: 文件类型（可选）
+- `fileExtension`: 文件扩展名（可选）
+- `keyword`: 搜索关键词，支持文件名、描述、标签搜索（可选）
+- `status`: 状态（可选，1-正常，2-已删除，3-已过期）
+- `isPublic`: 是否公开（可选，true-公开，false-私有）
+- `isTemporary`: 是否临时文件（可选，true-临时文件，false-正式文件）
+- `tags`: 标签，逗号分隔（可选）
+- `startTime`: 开始时间，格式：yyyy-MM-dd（可选）
+- `endTime`: 结束时间，格式：yyyy-MM-dd（可选）
+- `minFileSize`: 文件大小最小值（字节，可选）
+- `maxFileSize`: 文件大小最大值（字节，可选）
+- `sortField`: 排序字段（可选，支持：fileName、fileSize、downloadCount、viewCount、createTime、updateTime，默认createTime）
+- `sortDirection`: 排序方向（可选，ASC-升序，DESC-降序，默认DESC）
 
-### 清理临时文件
-- **URL**: `DELETE /cleanup-temp`
-- **请求参数**:
-  | 参数名 | 位置 | 数据类型 | 必填 | 说明 |
-  |--------|------|----------|------|------|
-  | days | 查询 | Integer | 否 | 清理多少天前的临时文件，默认7天 |
-- **响应参数**:
-  ```json
-  {
-    "code": 200,
-    "message": "清理成功",
-    "data": {
-      "deletedCount": 50,
-      "freedSpace": 51200000
-    }
-  }
-  ```
-- **功能**: 清理临时文件
-
-### 获取文件预览
-- **URL**: `GET /{id}/preview`
-- **请求参数**:
-  | 参数名 | 位置 | 数据类型 | 必填 | 说明 |
-  |--------|------|----------|------|------|
-  | id | 路径 | Long | 是 | 文件ID |
-  | width | 查询 | Integer | 否 | 预览宽度 |
-  | height | 查询 | Integer | 否 | 预览高度 |
-- **响应参数**: 预览图片流
-- **功能**: 获取文件预览
-
-### 验证文件归属
-- **URL**: `GET /{id}/belongs-to/{userId}`
-- **请求参数**:
-  | 参数名 | 位置 | 数据类型 | 必填 | 说明 |
-  |--------|------|----------|------|------|
-  | id | 路径 | Long | 是 | 文件ID |
-  | userId | 路径 | Long | 是 | 用户ID |
-- **响应参数**:
-  ```json
-  {
-    "code": 200,
-    "message": "验证成功",
-    "data": {
-      "fileId": 1,
-      "fileName": "example.pdf",
-      "userId": 1,
-      "belongsToUser": true,
-      "fileOwner": "张三"
-    }
-  }
-  ```
-- **功能**: 验证文件是否属于用户
-
-### 复制文件
-- **URL**: `POST /{id}/copy`
-- **请求参数**:
-  | 参数名 | 位置 | 数据类型 | 必填 | 说明 |
-  |--------|------|----------|------|------|
-  | id | 路径 | Long | 是 | 文件ID |
-  | targetUserId | 请求体 | Long | 是 | 目标用户ID |
-- **响应参数**:
-  ```json
-  {
-    "code": 200,
-    "message": "复制成功",
-    "data": {
-      "originalFileId": 1,
-      "originalFileName": "example.pdf",
-      "copiedFileId": 2,
-      "copiedFileName": "example_copy.pdf",
-      "targetUserId": 2,
-      "targetUserName": "李四",
-      "copyTime": "2025-11-08T22:00:00"
-    }
-  }
-  ```
-- **功能**: 复制文件
-
-### 移动文件
-- **URL**: `POST /{id}/move`
-- **请求参数**:
-  | 参数名 | 位置 | 数据类型 | 必填 | 说明 |
-  |--------|------|----------|------|------|
-  | id | 路径 | Long | 是 | 文件ID |
-  | targetUserId | 请求体 | Long | 是 | 目标用户ID |
-- **响应参数**:
-  ```json
-  {
-    "code": 200,
-    "message": "移动成功",
-    "data": {
-      "fileId": 1,
-      "fileName": "example.pdf",
-      "originalUserId": 1,
-      "originalUserName": "张三",
-      "targetUserId": 2,
-      "targetUserName": "李四",
-      "moveTime": "2025-11-08T22:00:00"
-    }
-  }
-  ```
-- **功能**: 移动文件
-
-### 获取文件历史版本
-- **URL**: `GET /{id}/versions`
-- **请求参数**:
-  | 参数名 | 位置 | 数据类型 | 必填 | 说明 |
-  |--------|------|----------|------|------|
-  | id | 路径 | Long | 是 | 文件ID |
-- **响应参数**:
-  ```json
-  {
-    "code": 200,
-    "message": "获取成功",
-    "data": [
+响应:
+```json
+{
+  "code": 200,
+  "message": "查询附件列表成功",
+  "data": {
+    "content": [
       {
-        "versionId": 1,
+        "attachmentId": 1,
+        "userId": 1,
+        "businessType": "resume",
+        "businessId": 123,
+        "description": "求职简历",
+        "tags": "简历,求职,Java",
+        "isPublic": false,
+        "isTemporary": false,
+        "expireTime": null,
+        "status": 1,
+        "downloadCount": 5,
+        "viewCount": 15,
+        "createTime": "2024-01-01T00:00:00",
+        "updateTime": "2024-01-01T00:00:00",
         "fileId": 1,
-        "fileName": "example_v1.pdf",
-        "fileSize": 1024000,
-        "versionNumber": 1,
-        "createTime": "2025-11-08T12:00:00",
-        "creator": "张三",
-        "description": "初始版本"
-      },
-      {
-        "versionId": 2,
-        "fileId": 1,
-        "fileName": "example_v2.pdf",
-        "fileSize": 1025000,
-        "versionNumber": 2,
-        "createTime": "2025-11-08T14:00:00",
-        "creator": "张三",
-        "description": "更新简历内容"
+        "fileName": "1_resume_1700000000000_123.pdf",
+        "originalName": "张三_简历.pdf",
+        "filePath": "/uploads/1/1_resume_1700000000000_123.pdf",
+        "fileSize": 204800,
+        "fileType": "resume",
+        "mimeType": "application/pdf",
+        "fileExtension": "pdf",
+        "fileHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "referenceCount": 1,
+        "downloadable": true,
+        "expired": false
       }
-    ]
-  }
-  ```
-- **功能**: 获取文件历史版本
-
-### 恢复文件版本
-- **URL**: `POST /{id}/restore/{versionId}`
-- **请求参数**:
-  | 参数名 | 位置 | 数据类型 | 必填 | 说明 |
-  |--------|------|----------|------|------|
-  | id | 路径 | Long | 是 | 文件ID |
-  | versionId | 路径 | Long | 是 | 版本ID |
-- **响应参数**:
-  ```json
-  {
-    "code": 200,
-    "message": "恢复成功",
-    "data": {
-      "fileId": 1,
-      "fileName": "example.pdf",
-      "restoredVersionId": 1,
-      "restoredVersionNumber": 1,
-      "restoreTime": "2025-11-08T22:00:00",
-      "restoredBy": "张三"
-    }
-  }
-  ```
-- **功能**: 恢复文件版本
-
-### 获取文件分享链接
-- **URL**: `POST /{id}/share`
-- **请求参数**:
-  | 参数名 | 位置 | 数据类型 | 必填 | 说明 |
-  |--------|------|----------|------|------|
-  | id | 路径 | Long | 是 | 文件ID |
-  | expireTime | 请求体 | String | 否 | 过期时间 |
-  | password | 请求体 | String | 否 | 访问密码 |
-- **响应参数**:
-  ```json
-  {
-    "code": 200,
-    "message": "分享成功",
-    "data": {
-      "fileId": 1,
-      "fileName": "example.pdf",
-      "shareLink": "https://example.com/files/share/abc123",
-      "shareCode": "abc123",
-      "expireTime": "2025-11-15T12:00:00",
-      "hasPassword": true,
-      "createTime": "2025-11-08T22:00:00",
-      "creator": "张三"
-    }
-  }
-  ```
-- **功能**: 获取文件分享链接
-
-### 取消文件分享
-- **URL**: `DELETE /{id}/share`
-- **请求参数**:
-  | 参数名 | 位置 | 数据类型 | 必填 | 说明 |
-  |--------|------|----------|------|------|
-  | id | 路径 | Long | 是 | 文件ID |
-- **响应参数**:
-  ```json
-  {
-    "code": 200,
-    "message": "取消分享成功",
-    "data": {
-      "fileId": 1,
-      "fileName": "example.pdf",
-      "cancelTime": "2025-11-08T22:00:00",
-      "cancelledBy": "张三"
-    }
-  }
-  ```
-- **功能**: 取消文件分享
-
-## 使用示例
-
-### 上传文件示例
-```bash
-curl -X POST "http://localhost:8080/api/files/upload" \
-  -H "Authorization: Bearer {token}" \
-  -F "file=@resume.pdf" \
-  -F "userId=1" \
-  -F "fileType=resume" \
-  -F "description=个人简历" \
-  -F "tags=简历,PDF"
+    ],
+    "totalElements": 100,
+    "totalPages": 10,
+    "size": 20,
+    "number": 0,
+    "first": true,
+    "last": false,
+    "numberOfElements": 20
+  },
+  "timestamp": "2025-11-17T00:54:23"
+}
 ```
 
-### 下载文件示例
-```bash
-curl -X GET "http://localhost:8080/api/files/download/1" \
-  -H "Authorization: Bearer {token}" \
-  --output resume.pdf
+**优化说明：**
+统一查询接口现在直接返回包含附件和文件信息的完整数据（AttachmentWithFileDTO），无需客户端额外请求文件信息，提高了查询效率和用户体验。
+
+### 文件验证
+
+#### 验证文件类型
+```http
+POST /api/files/validate/type
+Content-Type: multipart/form-data
+
+参数:
+- file: 文件 (必填)
 ```
 
-### 获取文件信息示例
-```bash
-curl -X GET "http://localhost:8080/api/files/1" \
-  -H "Authorization: Bearer {token}"
+响应:
+```json
+{
+  "code": 200,
+  "message": "文件类型验证完成",
+  "data": {
+    "isValid": true,
+    "allowedTypes": "jpg,jpeg,png,gif,pdf,doc,docx,txt"
+  },
+  "timestamp": "2025-11-17T00:54:23"
+}
 ```
 
-### 获取用户文件列表示例
-```bash
-curl -X GET "http://localhost:8080/api/files/user/1?fileType=resume&page=0&size=10" \
-  -H "Authorization: Bearer {token}"
+#### 验证文件大小
+```http
+POST /api/files/validate/size
+Content-Type: multipart/form-data
+
+参数:
+- file: 文件 (必填)
 ```
 
-### 更新文件信息示例
-```bash
-curl -X PUT "http://localhost:8080/api/files/1" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer {token}" \
-  -d '{
-    "description": "更新后的简历描述",
-    "tags": "简历,PDF,Java开发"
-  }'
+响应:
+```json
+{
+  "code": 200,
+  "message": "文件大小验证完成",
+  "data": {
+    "isValid": true,
+    "maxSize": 10485760
+  },
+  "timestamp": "2025-11-17T00:54:23"
+}
 ```
 
-## 注意事项
+### 文件池管理
 
-- 所有文件管理接口都需要有效的JWT Token进行认证
-- 文件类型：resume（简历）、avatar（头像）、id_card（身份证）、other（其他）
-- 文件状态：1-正常，2-已删除
-- 文件大小限制：单个文件不超过10MB
-- 支持的文件格式：PDF、DOC、DOCX、JPG、PNG等
-- 分页查询默认页码从0开始，每页大小默认20
-- 文件支持搜索和筛选功能
-- 文件支持版本管理和历史记录
-- 文件支持分享功能，可设置过期时间和访问密码
-- 临时文件自动清理，避免存储空间浪费
+#### 根据文件哈希查找文件
+```http
+GET /api/files/find/by-hash
+参数:
+- fileHash: 文件哈希值 (必填)
+```
 
-[返回主文档](../docs/README.md)
+响应:
+```json
+{
+  "code": 200,
+  "message": "查找文件完成",
+  "data": {
+    "fileId": 1,
+    "exists": true
+  },
+  "timestamp": "2025-11-17T00:54:23"
+}
+```
+
+#### 获取文件存储统计
+```http
+GET /api/files/statistics/storage
+```
+
+响应:
+```json
+{
+  "code": 200,
+  "message": "获取存储统计成功",
+  "data": {
+    "totalFiles": 100,
+    "totalSize": 104857600,
+    "totalUsers": 50,
+    "avgFileSize": 1048576,
+    "lastUpdated": "2024-01-01T00:00:00"
+  },
+  "timestamp": "2025-11-17T00:54:23"
+}

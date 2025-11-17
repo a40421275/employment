@@ -49,6 +49,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/users/login/phone").permitAll() // 手机号登录
                 .requestMatchers("/api/users/send-verification-code").permitAll() // 发送验证码
                 .requestMatchers("/api/users/reset-password").permitAll() // 重置密码
+                // 签名URL文件访问接口允许匿名访问
+                .requestMatchers("/api/files/signed/**").permitAll()
                 // Swagger UI 相关路径允许匿名访问
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/webjars/**", "/swagger-ui.html", "/").permitAll()
                 .anyRequest().authenticated() // 其他所有请求都需要认证

@@ -137,22 +137,36 @@ CREATE TABLE IF NOT EXISTS `job` (
     FOREIGN KEY (`category_id`) REFERENCES `job_category`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='岗位表';
 
--- 岗位标签表
+-- 岗位标签表（多对多关系设计）
 CREATE TABLE IF NOT EXISTS `job_tag` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
-    `job_id` BIGINT COMMENT '岗位ID（可为空，表示独立标签）',
     `tag_name` VARCHAR(50) NOT NULL COMMENT '标签名称',
-    `tag_type` TINYINT NOT NULL DEFAULT 0 COMMENT '标签类型：0-系统标签，1-自定义标签',
+    `tag_type` TINYINT NOT NULL DEFAULT 1 COMMENT '标签类型：0-系统标签，1-自定义标签',
     `tag_color` VARCHAR(20) COMMENT '标签颜色',
     `description` VARCHAR(200) COMMENT '标签描述',
+    `use_count` INT NOT NULL DEFAULT 0 COMMENT '使用次数',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    INDEX `idx_job_id` (`job_id`),
+    UNIQUE KEY `uk_tag_name` (`tag_name`),
     INDEX `idx_tag_name` (`tag_name`),
     INDEX `idx_tag_type` (`tag_type`),
-    FOREIGN KEY (`job_id`) REFERENCES `job`(`id`) ON DELETE CASCADE
+    INDEX `idx_use_count` (`use_count`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='岗位标签表';
+
+-- 岗位标签关联表（多对多关系）
+CREATE TABLE IF NOT EXISTS `job_tag_relation` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `job_id` BIGINT NOT NULL COMMENT '岗位ID',
+    `tag_id` BIGINT NOT NULL COMMENT '标签ID',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_job_tag` (`job_id`, `tag_id`),
+    INDEX `idx_job_id` (`job_id`),
+    INDEX `idx_tag_id` (`tag_id`),
+    FOREIGN KEY (`job_id`) REFERENCES `job`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`tag_id`) REFERENCES `job_tag`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='岗位标签关联表';
 
 -- 岗位申请表
 CREATE TABLE IF NOT EXISTS `job_apply` (
@@ -381,11 +395,82 @@ CREATE TABLE IF NOT EXISTS `system_config` (
     `config_key` VARCHAR(100) UNIQUE NOT NULL COMMENT '配置键',
     `config_value` TEXT NOT NULL COMMENT '配置值',
     `description` VARCHAR(500) COMMENT '配置描述',
+    `config_group` VARCHAR(50) COMMENT '配置分组',
+    `value_type` VARCHAR(20) COMMENT '配置值类型',
+    `editable` TINYINT NOT NULL DEFAULT 1 COMMENT '是否可编辑：0-否，1-是',
+    `system_config` TINYINT NOT NULL DEFAULT 0 COMMENT '是否为系统配置：0-否，1-是',
+    `sort_order` INT NOT NULL DEFAULT 0 COMMENT '排序顺序',
+    `validation_rule` VARCHAR(200) COMMENT '验证规则',
+    `default_value` TEXT COMMENT '默认值',
+    `options` TEXT COMMENT '选项值（JSON格式）',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    INDEX `idx_config_key` (`config_key`)
+    INDEX `idx_config_key` (`config_key`),
+    INDEX `idx_config_group` (`config_group`),
+    INDEX `idx_value_type` (`value_type`),
+    INDEX `idx_editable` (`editable`),
+    INDEX `idx_system_config` (`system_config`),
+    INDEX `idx_sort_order` (`sort_order`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统配置表';
+
+
+-- 文件表（重构后）- 只保存物理文件信息
+CREATE TABLE IF NOT EXISTS `file` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `file_name` VARCHAR(255) NOT NULL COMMENT '存储文件名',
+    `original_name` VARCHAR(255) NOT NULL COMMENT '原始文件名',
+    `file_path` VARCHAR(500) NOT NULL COMMENT '文件存储路径',
+    `file_size` BIGINT NOT NULL COMMENT '文件大小（字节）',
+    `file_type` VARCHAR(50) NOT NULL COMMENT '文件类型',
+    `mime_type` VARCHAR(100) NOT NULL COMMENT 'MIME类型',
+    `file_extension` VARCHAR(20) COMMENT '文件扩展名',
+    `file_hash` VARCHAR(64) NOT NULL COMMENT '文件哈希值（SHA-256），用于重复文件检测',
+    `creator_user_id` BIGINT NOT NULL COMMENT '创建者用户ID',
+    `reference_count` INT NOT NULL DEFAULT 0 COMMENT '引用计数，记录有多少个附件在使用这个文件',
+    `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态：1-正常，2-已删除',
+    `last_access_time` DATETIME COMMENT '最后访问时间',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_file_hash` (`file_hash`),
+    INDEX `idx_creator_user_id` (`creator_user_id`),
+    INDEX `idx_file_type` (`file_type`),
+    INDEX `idx_status` (`status`),
+    INDEX `idx_reference_count` (`reference_count`),
+    INDEX `idx_last_access_time` (`last_access_time`),
+    FOREIGN KEY (`creator_user_id`) REFERENCES `user`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='文件表（重构后）- 只保存物理文件信息';
+
+-- 附件表 - 保存文件的业务属性
+CREATE TABLE IF NOT EXISTS `attachment` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `file_id` BIGINT NOT NULL COMMENT '文件ID（关联文件表）',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `business_type` VARCHAR(50) NOT NULL COMMENT '业务类型：resume/avatar/id_card/company_logo/job_attachment/other',
+    `business_id` BIGINT COMMENT '业务ID',
+    `description` VARCHAR(500) COMMENT '文件描述',
+    `tags` VARCHAR(500) COMMENT '文件标签，逗号分隔',
+    `is_public` TINYINT NOT NULL DEFAULT 0 COMMENT '是否公开：0-私有，1-公开',
+    `is_temporary` TINYINT NOT NULL DEFAULT 0 COMMENT '是否临时文件：0-否，1-是',
+    `expire_time` DATETIME COMMENT '过期时间',
+    `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态：1-正常，2-已删除，3-已过期',
+    `download_count` INT NOT NULL DEFAULT 0 COMMENT '下载次数',
+    `view_count` INT NOT NULL DEFAULT 0 COMMENT '查看次数',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    INDEX `idx_file_id` (`file_id`),
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_business_type` (`business_type`),
+    INDEX `idx_business_id` (`business_id`),
+    INDEX `idx_status` (`status`),
+    INDEX `idx_is_temporary` (`is_temporary`),
+    INDEX `idx_expire_time` (`expire_time`),
+    INDEX `idx_create_time` (`create_time`),
+    FOREIGN KEY (`file_id`) REFERENCES `file`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='附件表 - 保存文件的业务属性';
 
 -- 设置数据库字符集（确保中文支持）
 ALTER DATABASE employment_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

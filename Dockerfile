@@ -34,5 +34,21 @@ COPY --from=build /app/target/*.jar app.jar
 # 暴露端口（使用8080而不是80，因为Spring Boot默认使用8080）
 EXPOSE 8080
 
-# 执行启动命令，使用生产环境profile
-ENTRYPOINT ["java", "-jar", "/app/app.jar", "--spring.profiles.active=prod"]
+# 执行启动命令，使用生产环境profile，并优化JVM参数
+ENTRYPOINT ["java", \
+    "-Xmx2g", \
+    "-Xms512m", \
+    "-XX:+UseG1GC", \
+    "-XX:MaxGCPauseMillis=200", \
+    "-XX:+UseStringDeduplication", \
+    "-XX:+HeapDumpOnOutOfMemoryError", \
+    "-XX:HeapDumpPath=/tmp/heapdump.hprof", \
+    "-XX:+PrintGCDetails", \
+    "-XX:+PrintGCDateStamps", \
+    "-XX:+PrintTenuringDistribution", \
+    "-XX:+PrintGCApplicationStoppedTime", \
+    "-Xloggc:/tmp/gc.log", \
+    "-Djava.security.egd=file:/dev/./urandom", \
+    "-Dfile.encoding=UTF-8", \
+    "-jar", "/app/app.jar", \
+    "--spring.profiles.active=prod"]

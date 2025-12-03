@@ -14,8 +14,8 @@ COPY settings.xml pom.xml /app/
 RUN mvn -s /app/settings.xml -f /app/pom.xml clean package -P prod -DskipTests && \
     rm -rf /root/.m2
 
-# 选择运行时基础镜像（使用更小的Liberica OpenJRE Alpine镜像）
-FROM bellsoft/liberica-openjre-alpine-musl:17.0.12-1
+# 选择运行时基础镜像（使用Eclipse Temurin JRE Alpine镜像）
+FROM eclipse-temurin:17-jre-alpine
 
 # 设置时区为上海
 RUN apk add --no-cache tzdata \

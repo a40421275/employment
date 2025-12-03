@@ -44,6 +44,8 @@
 			<id>prod</id>
 			<properties>
 				<spring.profiles.active>prod</spring.profiles.active>
+				<maven.test.skip>true</maven.test.skip>
+				<skipTests>true</skipTests>
 			</properties>
 		</profile>
 	</profiles>

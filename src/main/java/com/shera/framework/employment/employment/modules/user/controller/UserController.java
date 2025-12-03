@@ -1,5 +1,6 @@
 package com.shera.framework.employment.employment.modules.user.controller;
 
+import com.shera.framework.employment.employment.modules.user.dto.ResetPasswordDTO;
 import com.shera.framework.employment.employment.modules.user.dto.UserDTO;
 import com.shera.framework.employment.employment.modules.user.dto.UserProfileDTO;
 import com.shera.framework.employment.employment.modules.user.dto.UserWithCompanyDTO;
@@ -242,7 +243,7 @@ public class UserController {
     }
     
     /**
-     * 重置密码
+     * 重置密码（手机号方式）
      */
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> resetRequest) {
@@ -259,6 +260,38 @@ public class UserController {
     }
 
     /**
+     * 重置密码（邮箱+验证码方式）
+     */
+    @PostMapping("/reset-password/email")
+    public ResponseEntity<?> resetPasswordByEmail(@RequestBody ResetPasswordDTO resetPasswordDTO) {
+        try {
+            // 验证邮箱格式
+            if (resetPasswordDTO.getEmail() == null || resetPasswordDTO.getEmail().trim().isEmpty()) {
+                return ResponseUtil.error("邮箱不能为空");
+            }
+
+            // 验证验证码格式
+            if (resetPasswordDTO.getVerificationCode() == null || resetPasswordDTO.getVerificationCode().trim().isEmpty()) {
+                return ResponseUtil.error("验证码不能为空");
+            }
+
+            // 验证密码格式
+            if (resetPasswordDTO.getNewPassword() == null || resetPasswordDTO.getNewPassword().trim().isEmpty()) {
+                return ResponseUtil.error("新密码不能为空");
+            }
+
+            boolean result = userService.resetPasswordByEmail(
+                resetPasswordDTO.getEmail(),
+                resetPasswordDTO.getVerificationCode(),
+                resetPasswordDTO.getNewPassword()
+            );
+            return ResponseUtil.success("重置密码成功", result);
+        } catch (Exception e) {
+            return ResponseUtil.error(e.getMessage());
+        }
+    }
+
+    /**
      * 管理员重置用户密码
      */
     @PostMapping("/{id}/admin-reset-password")
@@ -268,21 +301,6 @@ public class UserController {
         try {
             boolean result = userService.adminResetPassword(id, newPassword);
             return ResponseUtil.success("管理员重置密码成功", result);
-        } catch (Exception e) {
-            return ResponseUtil.error(e.getMessage());
-        }
-    }
-    
-    /**
-     * 发送验证码
-     */
-    @PostMapping("/send-verification-code")
-    public ResponseEntity<?> sendVerificationCode(@RequestBody Map<String, String> request) {
-        String phone = request.get("phone");
-        
-        try {
-            boolean result = userService.sendVerificationCode(phone);
-            return ResponseUtil.success("验证码发送成功", result);
         } catch (Exception e) {
             return ResponseUtil.error(e.getMessage());
         }
@@ -436,6 +454,80 @@ public class UserController {
         try {
             Map<String, Object> behaviorStats = userService.getUserBehaviorStats(id, startDate, endDate);
             return ResponseUtil.success("获取成功", behaviorStats);
+        } catch (Exception e) {
+            return ResponseUtil.error(e.getMessage());
+        }
+    }
+
+    // ========== 重复校验接口 ==========
+
+    /**
+     * 检查用户名是否已存在
+     */
+    @GetMapping("/check/username")
+    public ResponseEntity<?> checkUsernameExists(@RequestParam String username) {
+        try {
+            boolean exists = userService.checkUsernameExists(username);
+            Map<String, Object> result = new HashMap<>();
+            result.put("username", username);
+            result.put("exists", exists);
+            return ResponseUtil.success("检查成功", result);
+        } catch (Exception e) {
+            return ResponseUtil.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 检查手机号是否已存在
+     */
+    @GetMapping("/check/phone")
+    public ResponseEntity<?> checkPhoneExists(@RequestParam String phone) {
+        try {
+            boolean exists = userService.checkPhoneExists(phone);
+            Map<String, Object> result = new HashMap<>();
+            result.put("phone", phone);
+            result.put("exists", exists);
+            return ResponseUtil.success("检查成功", result);
+        } catch (Exception e) {
+            return ResponseUtil.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 检查邮箱是否已存在
+     */
+    @GetMapping("/check/email")
+    public ResponseEntity<?> checkEmailExists(@RequestParam String email) {
+        try {
+            boolean exists = userService.checkEmailExists(email);
+            Map<String, Object> result = new HashMap<>();
+            result.put("email", email);
+            result.put("exists", exists);
+            return ResponseUtil.success("检查成功", result);
+        } catch (Exception e) {
+            return ResponseUtil.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 批量检查账号、手机号、邮箱是否已存在
+     */
+    @PostMapping("/check/duplicates")
+    public ResponseEntity<?> checkDuplicates(@RequestBody Map<String, String> checkRequest) {
+        try {
+            String username = checkRequest.get("username");
+            String phone = checkRequest.get("phone");
+            String email = checkRequest.get("email");
+            
+            Map<String, Boolean> duplicates = userService.checkDuplicates(username, phone, email);
+            
+            Map<String, Object> result = new HashMap<>();
+            result.put("username", username);
+            result.put("phone", phone);
+            result.put("email", email);
+            result.put("duplicates", duplicates);
+            
+            return ResponseUtil.success("检查成功", result);
         } catch (Exception e) {
             return ResponseUtil.error(e.getMessage());
         }

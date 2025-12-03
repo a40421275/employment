@@ -56,6 +56,28 @@ public interface UserService {
      * 根据微信openid查找用户
      */
     Optional<User> findByWxOpenid(String wxOpenid);
+
+    // ========== 重复校验接口 ==========
+
+    /**
+     * 检查用户名是否已存在
+     */
+    boolean checkUsernameExists(String username);
+
+    /**
+     * 检查手机号是否已存在
+     */
+    boolean checkPhoneExists(String phone);
+
+    /**
+     * 检查邮箱是否已存在
+     */
+    boolean checkEmailExists(String email);
+
+    /**
+     * 批量检查账号、手机号、邮箱是否已存在
+     */
+    Map<String, Boolean> checkDuplicates(String username, String phone, String email);
     
     /**
      * 更新用户信息
@@ -100,19 +122,14 @@ public interface UserService {
     boolean changePassword(Long userId, String oldPassword, String newPassword);
     
     /**
-     * 重置密码
+     * 重置密码（手机号方式）
      */
     boolean resetPassword(String phone, String verificationCode, String newPassword);
-    
+
     /**
-     * 发送验证码
+     * 重置密码（邮箱+验证码方式）
      */
-    boolean sendVerificationCode(String phone);
-    
-    /**
-     * 验证验证码
-     */
-    boolean verifyCode(String phone, String code);
+    boolean resetPasswordByEmail(String email, String verificationCode, String newPassword);
     
     /**
      * 分页查询用户列表

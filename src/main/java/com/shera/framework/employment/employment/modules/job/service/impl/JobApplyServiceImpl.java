@@ -34,7 +34,7 @@ public class JobApplyServiceImpl implements JobApplyService {
     
     @Override
     @Transactional
-    public JobApply createJobApply(JobApplyDTO jobApplyDTO) {
+    public JobApplyDTO createJobApply(JobApplyDTO jobApplyDTO) {
         // 检查用户是否已申请该岗位
         if (hasUserAppliedJob(jobApplyDTO.getUserId(), jobApplyDTO.getJobId())) {
             throw new RuntimeException("用户已申请该岗位");
@@ -52,94 +52,114 @@ public class JobApplyServiceImpl implements JobApplyService {
         // 增加岗位申请量
         jobService.increaseApplyCount(jobApplyDTO.getJobId());
         
-        return savedApply;
+        return convertToDTO(savedApply);
     }
     
     @Override
     @Transactional
-    public JobApply updateJobApply(Long id, JobApplyDTO jobApplyDTO) {
-        JobApply jobApply = getJobApplyById(id);
+    public JobApplyDTO updateJobApply(Long id, JobApplyDTO jobApplyDTO) {
+        JobApply jobApply = jobApplyRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("岗位申请不存在: " + id));
         copyJobApplyProperties(jobApply, jobApplyDTO);
-        return jobApplyRepository.save(jobApply);
+        JobApply updatedApply = jobApplyRepository.save(jobApply);
+        return convertToDTO(updatedApply);
     }
     
     @Override
     @Transactional
     public void deleteJobApply(Long id) {
-        JobApply jobApply = getJobApplyById(id);
+        JobApply jobApply = jobApplyRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("岗位申请不存在: " + id));
         jobApplyRepository.delete(jobApply);
     }
     
     @Override
-    public JobApply getJobApplyById(Long id) {
-        return jobApplyRepository.findById(id)
+    public JobApplyDTO getJobApplyById(Long id) {
+        JobApply jobApply = jobApplyRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("岗位申请不存在: " + id));
+        return convertToDTO(jobApply);
     }
     
     @Override
-    public JobApply getJobApplyDetail(Long id) {
-        JobApply jobApply = getJobApplyById(id);
+    public JobApplyDTO getJobApplyDetail(Long id) {
+        JobApply jobApply = jobApplyRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("岗位申请不存在: " + id));
         // 这里可以加载关联的实体信息，如用户、岗位、简历等
-        return jobApply;
+        return convertToDTO(jobApply);
     }
     
     @Override
-    public Page<JobApply> getJobApplies(Pageable pageable) {
-        return jobApplyRepository.findAll(pageable);
+    public Page<JobApplyDTO> getJobApplies(Pageable pageable) {
+        return jobApplyRepository.findAll(pageable).map(this::convertToDTO);
     }
     
     @Override
-    public List<JobApply> getJobAppliesByUserId(Long userId) {
-        return jobApplyRepository.findByUserId(userId);
+    public List<JobApplyDTO> getJobAppliesByUserId(Long userId) {
+        return jobApplyRepository.findByUserId(userId).stream()
+                .map(this::convertToDTO)
+                .toList();
     }
     
     @Override
-    public Page<JobApply> getJobAppliesByUserId(Long userId, Pageable pageable) {
-        return jobApplyRepository.findByUserId(userId, pageable);
+    public Page<JobApplyDTO> getJobAppliesByUserId(Long userId, Pageable pageable) {
+        return jobApplyRepository.findByUserId(userId, pageable).map(this::convertToDTO);
     }
     
     @Override
-    public List<JobApply> getJobAppliesByJobId(Long jobId) {
-        return jobApplyRepository.findByJobId(jobId);
+    public List<JobApplyDTO> getJobAppliesByJobId(Long jobId) {
+        return jobApplyRepository.findByJobId(jobId).stream()
+                .map(this::convertToDTO)
+                .toList();
     }
     
     @Override
-    public Page<JobApply> getJobAppliesByJobId(Long jobId, Pageable pageable) {
-        return jobApplyRepository.findByJobId(jobId, pageable);
+    public Page<JobApplyDTO> getJobAppliesByJobId(Long jobId, Pageable pageable) {
+        return jobApplyRepository.findByJobId(jobId, pageable).map(this::convertToDTO);
     }
     
     @Override
-    public List<JobApply> getJobAppliesByResumeId(Long resumeId) {
-        return jobApplyRepository.findByResumeId(resumeId);
+    public List<JobApplyDTO> getJobAppliesByResumeId(Long resumeId) {
+        return jobApplyRepository.findByResumeId(resumeId).stream()
+                .map(this::convertToDTO)
+                .toList();
     }
     
     @Override
-    public List<JobApply> getJobAppliesByStatus(Integer status) {
-        return jobApplyRepository.findByStatus(status);
+    public List<JobApplyDTO> getJobAppliesByStatus(Integer status) {
+        return jobApplyRepository.findByStatus(status).stream()
+                .map(this::convertToDTO)
+                .toList();
     }
     
     @Override
-    public List<JobApply> getJobAppliesByUserIdAndStatus(Long userId, Integer status) {
-        return jobApplyRepository.findByUserIdAndStatus(userId, status);
+    public List<JobApplyDTO> getJobAppliesByUserIdAndStatus(Long userId, Integer status) {
+        return jobApplyRepository.findByUserIdAndStatus(userId, status).stream()
+                .map(this::convertToDTO)
+                .toList();
     }
     
     @Override
-    public List<JobApply> getJobAppliesByJobIdAndStatus(Long jobId, Integer status) {
-        return jobApplyRepository.findByJobIdAndStatus(jobId, status);
+    public List<JobApplyDTO> getJobAppliesByJobIdAndStatus(Long jobId, Integer status) {
+        return jobApplyRepository.findByJobIdAndStatus(jobId, status).stream()
+                .map(this::convertToDTO)
+                .toList();
     }
     
     @Override
     @Transactional
-    public JobApply updateStatus(Long id, Integer status) {
-        JobApply jobApply = getJobApplyById(id);
+    public JobApplyDTO updateStatus(Long id, Integer status) {
+        JobApply jobApply = jobApplyRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("岗位申请不存在: " + id));
         jobApply.setStatus(status);
-        return jobApplyRepository.save(jobApply);
+        JobApply updatedApply = jobApplyRepository.save(jobApply);
+        return convertToDTO(updatedApply);
     }
     
     @Override
     @Transactional
-    public JobApply setInterviewTime(Long id, String interviewTime, String interviewLocation) {
-        JobApply jobApply = getJobApplyById(id);
+    public JobApplyDTO setInterviewTime(Long id, String interviewTime, String interviewLocation) {
+        JobApply jobApply = jobApplyRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("岗位申请不存在: " + id));
         
         // 解析面试时间
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -147,17 +167,57 @@ public class JobApplyServiceImpl implements JobApplyService {
         
         jobApply.setInterviewTime(interviewDateTime);
         jobApply.setInterviewLocation(interviewLocation);
-        jobApply.setStatus(3); // 设置为已通知面试状态
+        jobApply.setStatus(JobApply.Status.INTERVIEW_NOTIFIED.getCode()); // 设置为已通知面试状态
         
-        return jobApplyRepository.save(jobApply);
+        JobApply updatedApply = jobApplyRepository.save(jobApply);
+        return convertToDTO(updatedApply);
     }
     
     @Override
     @Transactional
-    public JobApply addFeedback(Long id, String feedback) {
-        JobApply jobApply = getJobApplyById(id);
+    public JobApplyDTO addFeedback(Long id, String feedback) {
+        JobApply jobApply = jobApplyRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("岗位申请不存在: " + id));
         jobApply.setFeedback(feedback);
-        return jobApplyRepository.save(jobApply);
+        JobApply updatedApply = jobApplyRepository.save(jobApply);
+        return convertToDTO(updatedApply);
+    }
+    
+    @Override
+    @Transactional
+    public JobApplyDTO passInterview(Long id, String feedback) {
+        JobApply jobApply = jobApplyRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("岗位申请不存在: " + id));
+        jobApply.setStatus(JobApply.Status.INTERVIEW_PASSED.getCode());
+        if (feedback != null && !feedback.trim().isEmpty()) {
+            jobApply.setFeedback(feedback);
+        }
+        JobApply updatedApply = jobApplyRepository.save(jobApply);
+        return convertToDTO(updatedApply);
+    }
+    
+    @Override
+    @Transactional
+    public JobApplyDTO rejectApplication(Long id, String reason) {
+        JobApply jobApply = jobApplyRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("岗位申请不存在: " + id));
+        jobApply.setStatus(JobApply.Status.REJECTED.getCode());
+        if (reason != null && !reason.trim().isEmpty()) {
+            jobApply.setFeedback(reason);
+        }
+        JobApply updatedApply = jobApplyRepository.save(jobApply);
+        return convertToDTO(updatedApply);
+    }
+    
+    @Override
+    @Transactional
+    public JobApplyDTO cancelApplication(Long id) {
+        JobApply jobApply = jobApplyRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("岗位申请不存在: " + id));
+        jobApply.setStatus(JobApply.Status.REJECTED.getCode()); // 取消申请视为拒绝
+        jobApply.setFeedback("用户主动取消申请");
+        JobApply updatedApply = jobApplyRepository.save(jobApply);
+        return convertToDTO(updatedApply);
     }
     
     @Override
@@ -171,6 +231,25 @@ public class JobApplyServiceImpl implements JobApplyService {
     @Override
     public boolean hasUserAppliedJob(Long userId, Long jobId) {
         return jobApplyRepository.findByUserIdAndJobId(userId, jobId).isPresent();
+    }
+    
+    @Override
+    public Map<String, Object> checkAppliedStatus(Long userId, Long jobId) {
+        Map<String, Object> result = new HashMap<>();
+        boolean applied = hasUserAppliedJob(userId, jobId);
+        result.put("applied", applied);
+        
+        if (applied) {
+            JobApply jobApply = jobApplyRepository.findByUserIdAndJobId(userId, jobId).orElse(null);
+            if (jobApply != null) {
+                result.put("applyId", jobApply.getId());
+                result.put("applyTime", jobApply.getCreateTime());
+                result.put("status", jobApply.getStatus());
+                result.put("statusDesc", getStatusDescription(jobApply.getStatus()));
+            }
+        }
+        
+        return result;
     }
     
     @Override
@@ -200,6 +279,14 @@ public class JobApplyServiceImpl implements JobApplyService {
     }
     
     @Override
+    public List<JobApplyDTO> getLatestApplications(int limit) {
+        Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "createTime"));
+        return jobApplyRepository.findAll(pageable).getContent().stream()
+                .map(this::convertToDTO)
+                .toList();
+    }
+    
+    @Override
     public Map<String, Object> getUserApplyStats(Long userId) {
         Map<String, Object> stats = new HashMap<>();
         
@@ -214,8 +301,12 @@ public class JobApplyServiceImpl implements JobApplyService {
         stats.put("totalApplies", totalApplies);
         
         // 面试邀请数
-        Long interviewInvites = jobApplyRepository.countByUserIdAndStatus(userId, 3);
+        Long interviewInvites = jobApplyRepository.countByUserIdAndStatus(userId, JobApply.Status.INTERVIEW_NOTIFIED.getCode());
         stats.put("interviewInvites", interviewInvites);
+        
+        // 面试通过数
+        Long interviewPassed = jobApplyRepository.countByUserIdAndStatus(userId, JobApply.Status.INTERVIEW_PASSED.getCode());
+        stats.put("interviewPassed", interviewPassed);
         
         return stats;
     }
@@ -227,7 +318,7 @@ public class JobApplyServiceImpl implements JobApplyService {
         jobApply.setUserId(jobApplyDTO.getUserId());
         jobApply.setJobId(jobApplyDTO.getJobId());
         jobApply.setResumeId(jobApplyDTO.getResumeId());
-        jobApply.setStatus(jobApplyDTO.getStatus());
+        jobApply.setStatus(jobApplyDTO.getStatus() != null ? jobApplyDTO.getStatus() : JobApply.Status.APPLIED.getCode());
         jobApply.setApplyNotes(jobApplyDTO.getApplyNotes());
         jobApply.setFeedback(jobApplyDTO.getFeedback());
         
@@ -237,6 +328,72 @@ public class JobApplyServiceImpl implements JobApplyService {
         }
         if (jobApplyDTO.getInterviewLocation() != null) {
             jobApply.setInterviewLocation(jobApplyDTO.getInterviewLocation());
+        }
+    }
+    
+    /**
+     * 获取状态描述
+     */
+    private String getStatusDescription(Integer status) {
+        for (JobApply.Status statusEnum : JobApply.Status.values()) {
+            if (statusEnum.getCode() == status) {
+                return statusEnum.getDesc();
+            }
+        }
+        return "未知状态";
+    }
+
+    /**
+     * 将JobApply实体转换为JobApplyDTO
+     */
+    private JobApplyDTO convertToDTO(JobApply jobApply) {
+        if (jobApply == null) {
+            return null;
+        }
+        
+        JobApplyDTO dto = new JobApplyDTO();
+        dto.setId(jobApply.getId());
+        dto.setUserId(jobApply.getUserId());
+        dto.setJobId(jobApply.getJobId());
+        dto.setResumeId(jobApply.getResumeId());
+        dto.setStatus(jobApply.getStatus());
+        dto.setMatchScore(jobApply.getMatchScore());
+        dto.setApplyNotes(jobApply.getApplyNotes());
+        dto.setInterviewTime(jobApply.getInterviewTime());
+        dto.setInterviewLocation(jobApply.getInterviewLocation());
+        dto.setFeedback(jobApply.getFeedback());
+        dto.setCreateTime(jobApply.getCreateTime());
+        dto.setUpdateTime(jobApply.getUpdateTime());
+        
+        // 加载关联信息
+        loadAssociatedInfo(dto, jobApply);
+        
+        return dto;
+    }
+
+    /**
+     * 加载关联信息
+     */
+    private void loadAssociatedInfo(JobApplyDTO dto, JobApply jobApply) {
+        // 加载岗位信息
+        if (jobApply.getJob() != null) {
+            dto.setJobTitle(jobApply.getJob().getTitle());
+            
+            // 加载公司信息
+            if (jobApply.getJob().getCompany() != null) {
+                dto.setCompanyName(jobApply.getJob().getCompany().getCompanyName());
+            }
+        }
+        
+        // 加载简历信息
+        if (jobApply.getResume() != null) {
+            dto.setResumeName(jobApply.getResume().getTitle());
+        }
+        
+        // 加载用户信息
+        if (jobApply.getUser() != null) {
+            dto.setUserName(jobApply.getUser().getUsername());
+            dto.setUserEmail(jobApply.getUser().getEmail());
         }
     }
 }

@@ -1,7 +1,6 @@
 package com.shera.framework.employment.employment.modules.job.service;
 
 import com.shera.framework.employment.employment.modules.job.dto.JobApplyDTO;
-import com.shera.framework.employment.employment.modules.job.entity.JobApply;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -17,12 +16,12 @@ public interface JobApplyService {
     /**
      * 创建岗位申请
      */
-    JobApply createJobApply(JobApplyDTO jobApplyDTO);
+    JobApplyDTO createJobApply(JobApplyDTO jobApplyDTO);
     
     /**
      * 更新岗位申请
      */
-    JobApply updateJobApply(Long id, JobApplyDTO jobApplyDTO);
+    JobApplyDTO updateJobApply(Long id, JobApplyDTO jobApplyDTO);
     
     /**
      * 删除岗位申请
@@ -32,72 +31,72 @@ public interface JobApplyService {
     /**
      * 根据ID获取岗位申请
      */
-    JobApply getJobApplyById(Long id);
+    JobApplyDTO getJobApplyById(Long id);
     
     /**
      * 获取申请详情（包含关联信息）
      */
-    JobApply getJobApplyDetail(Long id);
+    JobApplyDTO getJobApplyDetail(Long id);
     
     /**
      * 分页查询岗位申请列表
      */
-    Page<JobApply> getJobApplies(Pageable pageable);
+    Page<JobApplyDTO> getJobApplies(Pageable pageable);
     
     /**
      * 根据用户ID查询岗位申请列表
      */
-    List<JobApply> getJobAppliesByUserId(Long userId);
+    List<JobApplyDTO> getJobAppliesByUserId(Long userId);
     
     /**
      * 根据用户ID分页查询岗位申请列表
      */
-    Page<JobApply> getJobAppliesByUserId(Long userId, Pageable pageable);
+    Page<JobApplyDTO> getJobAppliesByUserId(Long userId, Pageable pageable);
     
     /**
      * 根据岗位ID查询岗位申请列表
      */
-    List<JobApply> getJobAppliesByJobId(Long jobId);
+    List<JobApplyDTO> getJobAppliesByJobId(Long jobId);
     
     /**
      * 根据岗位ID分页查询岗位申请列表
      */
-    Page<JobApply> getJobAppliesByJobId(Long jobId, Pageable pageable);
+    Page<JobApplyDTO> getJobAppliesByJobId(Long jobId, Pageable pageable);
     
     /**
      * 根据简历ID查询岗位申请列表
      */
-    List<JobApply> getJobAppliesByResumeId(Long resumeId);
+    List<JobApplyDTO> getJobAppliesByResumeId(Long resumeId);
     
     /**
      * 根据状态查询岗位申请列表
      */
-    List<JobApply> getJobAppliesByStatus(Integer status);
+    List<JobApplyDTO> getJobAppliesByStatus(Integer status);
     
     /**
      * 根据用户ID和状态查询岗位申请列表
      */
-    List<JobApply> getJobAppliesByUserIdAndStatus(Long userId, Integer status);
+    List<JobApplyDTO> getJobAppliesByUserIdAndStatus(Long userId, Integer status);
     
     /**
      * 根据岗位ID和状态查询岗位申请列表
      */
-    List<JobApply> getJobAppliesByJobIdAndStatus(Long jobId, Integer status);
+    List<JobApplyDTO> getJobAppliesByJobIdAndStatus(Long jobId, Integer status);
     
     /**
      * 更新申请状态
      */
-    JobApply updateStatus(Long id, Integer status);
+    JobApplyDTO updateStatus(Long id, Integer status);
     
     /**
      * 设置面试时间
      */
-    JobApply setInterviewTime(Long id, String interviewTime, String interviewLocation);
+    JobApplyDTO setInterviewTime(Long id, String interviewTime, String interviewLocation);
     
     /**
      * 添加申请反馈
      */
-    JobApply addFeedback(Long id, String feedback);
+    JobApplyDTO addFeedback(Long id, String feedback);
     
     /**
      * 计算匹配度
@@ -133,4 +132,29 @@ public interface JobApplyService {
      * 获取用户申请统计
      */
     Map<String, Object> getUserApplyStats(Long userId);
+    
+    /**
+     * 面试通过
+     */
+    JobApplyDTO passInterview(Long id, String feedback);
+    
+    /**
+     * 拒绝申请
+     */
+    JobApplyDTO rejectApplication(Long id, String reason);
+    
+    /**
+     * 取消申请
+     */
+    JobApplyDTO cancelApplication(Long id);
+    
+    /**
+     * 检查是否已申请
+     */
+    Map<String, Object> checkAppliedStatus(Long userId, Long jobId);
+    
+    /**
+     * 获取最新申请
+     */
+    List<JobApplyDTO> getLatestApplications(int limit);
 }

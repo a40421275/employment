@@ -51,12 +51,20 @@ public class SystemConfigUtil {
     public static final String EMAIL_ENABLED = "email_enabled";
     public static final String EMAIL_HOST = "email_host";
     public static final String EMAIL_PORT = "email_port";
+    public static final String EMAIL_USERNAME = "email_username";
+    public static final String EMAIL_PASSWORD = "email_password";
+    public static final String EMAIL_FROM = "email_from";
     
     public static final String SMS_ENABLED = "sms_enabled";
     public static final String SMS_PROVIDER = "sms_provider";
     
     public static final String NOTIFICATION_ENABLED = "notification_enabled";
     public static final String NOTIFICATION_TYPES = "notification_types";
+    
+    public static final String WECHAT_ENABLED = "wechat_enabled";
+    public static final String WECHAT_APP_ID = "wechat_app_id";
+    public static final String WECHAT_APP_SECRET = "wechat_app_secret";
+    public static final String WECHAT_TEMPLATE_ID = "wechat_template_id";
     
     public static final String CACHE_ENABLED = "cache_enabled";
     public static final String CACHE_TTL = "cache_ttl";
@@ -80,13 +88,20 @@ public class SystemConfigUtil {
         Map.entry(SECURITY_LOGIN_ATTEMPTS, "5"),
         Map.entry(SECURITY_LOCKOUT_TIME, "30"),
         Map.entry(SECURITY_PASSWORD_MIN_LENGTH, "8"),
-        Map.entry(EMAIL_ENABLED, "false"),
-        Map.entry(EMAIL_HOST, "smtp.example.com"),
-        Map.entry(EMAIL_PORT, "587"),
+        Map.entry(EMAIL_ENABLED, "true"),
+        Map.entry(EMAIL_HOST, "smtp.163.com"),
+        Map.entry(EMAIL_PORT, "465"),
+        Map.entry(EMAIL_USERNAME, "wangcheng-0012@163.com"),
+        Map.entry(EMAIL_PASSWORD, "PSRV634spjyqRcGy"),
+        Map.entry(EMAIL_FROM, "wangcheng-0012@163.com"),
         Map.entry(SMS_ENABLED, "false"),
         Map.entry(SMS_PROVIDER, "aliyun"),
         Map.entry(NOTIFICATION_ENABLED, "true"),
         Map.entry(NOTIFICATION_TYPES, "email,sms,web"),
+        Map.entry(WECHAT_ENABLED, "false"),
+        Map.entry(WECHAT_APP_ID, ""),
+        Map.entry(WECHAT_APP_SECRET, ""),
+        Map.entry(WECHAT_TEMPLATE_ID, ""),
         Map.entry(CACHE_ENABLED, "true"),
         Map.entry(CACHE_TTL, "3600"),
         Map.entry(RESUME_PRIVACY_DEFAULT, "1"),
@@ -313,6 +328,119 @@ public class SystemConfigUtil {
      */
     public Long getUrlSignerExpirySeconds() {
         return getLong(FILE_DOWNLOAD_SIGNER_EXPIRY_SECONDS, 3600L); // 默认1小时
+    }
+    
+    // ==================== 邮件配置获取方法 ====================
+    
+    /**
+     * 获取邮件服务是否启用
+     */
+    public Boolean isEmailEnabled() {
+        return getBoolean(EMAIL_ENABLED, false);
+    }
+    
+    /**
+     * 获取邮件服务器主机
+     */
+    public String getEmailHost() {
+        return getString(EMAIL_HOST, "smtp.example.com");
+    }
+    
+    /**
+     * 获取邮件服务器端口
+     */
+    public Integer getEmailPort() {
+        return getInteger(EMAIL_PORT, 587);
+    }
+    
+    /**
+     * 获取邮件用户名
+     */
+    public String getEmailUsername() {
+        return getString(EMAIL_USERNAME, "");
+    }
+    
+    /**
+     * 获取邮件密码
+     */
+    public String getEmailPassword() {
+        return getString(EMAIL_PASSWORD, "");
+    }
+    
+    /**
+     * 获取发件人邮箱
+     */
+    public String getEmailFrom() {
+        return getString(EMAIL_FROM, "");
+    }
+    
+    /**
+     * 验证邮件配置是否完整
+     */
+    public boolean isEmailConfigValid() {
+        return isEmailEnabled() && 
+               !getEmailHost().isEmpty() && 
+               !getEmailUsername().isEmpty() && 
+               !getEmailPassword().isEmpty() && 
+               !getEmailFrom().isEmpty();
+    }
+    
+    /**
+     * 获取邮件配置摘要信息（用于日志，不包含敏感信息）
+     */
+    public String getEmailConfigSummary() {
+        return String.format("EmailConfig[enabled=%s, host=%s, port=%d, username=%s, from=%s]",
+                isEmailEnabled(), getEmailHost(), getEmailPort(), getEmailUsername(), getEmailFrom());
+    }
+    
+    // ==================== 微信配置获取方法 ====================
+    
+    /**
+     * 获取微信服务是否启用
+     */
+    public Boolean isWechatEnabled() {
+        return getBoolean(WECHAT_ENABLED, false);
+    }
+    
+    /**
+     * 获取微信AppID
+     */
+    public String getWechatAppId() {
+        return getString(WECHAT_APP_ID, "");
+    }
+    
+    /**
+     * 获取微信AppSecret
+     */
+    public String getWechatAppSecret() {
+        return getString(WECHAT_APP_SECRET, "");
+    }
+    
+    /**
+     * 获取微信模板ID
+     */
+    public String getWechatTemplateId() {
+        return getString(WECHAT_TEMPLATE_ID, "");
+    }
+    
+    /**
+     * 验证微信配置是否完整
+     */
+    public boolean isWechatConfigValid() {
+        return isWechatEnabled() && 
+               !getWechatAppId().isEmpty() && 
+               !getWechatAppSecret().isEmpty();
+    }
+    
+    /**
+     * 获取微信配置摘要信息（用于日志，不包含敏感信息）
+     */
+    public String getWechatConfigSummary() {
+        return String.format("WechatConfig[enabled=%s, appId=%s, hasSecret=%s, hasTemplate=%s]",
+                isWechatEnabled(), 
+                getWechatAppId(), 
+                !getWechatAppSecret().isEmpty() ? "yes" : "no",
+                !getWechatTemplateId().isEmpty() ? "yes" : "no");
     }
     
     // ==================== 配置管理方法 ====================

@@ -491,9 +491,9 @@ public class RecommendationServiceImpl implements RecommendationService {
     private double calculateResumeJobMatchScore(Resume resume, Job job) {
         double score = 0.0;
         
-        // 基于技能匹配度
-        if (resume.getContent() != null && job.getRequirements() != null) {
-            score += calculateSkillMatchScore(resume.getContent(), job.getRequirements()) * 0.6;
+        // 基于技能匹配度 - 使用简历标题和结构化数据
+        if (resume.getTitle() != null && job.getRequirements() != null) {
+            score += calculateSkillMatchScore(resume.getTitle(), job.getRequirements()) * 0.4;
         }
         
         // 基于工作经验匹配度
@@ -503,15 +503,20 @@ public class RecommendationServiceImpl implements RecommendationService {
                 // 简化的经验匹配逻辑
                 int workYears = userProfileOpt.get().getWorkYears();
                 if (workYears >= 5) {
-                    score += 0.4; // 资深经验加分
+                    score += 0.3; // 资深经验加分
                 } else if (workYears >= 3) {
-                    score += 0.3; // 中等经验加分
+                    score += 0.2; // 中等经验加分
                 } else if (workYears >= 1) {
-                    score += 0.2; // 初级经验加分
+                    score += 0.1; // 初级经验加分
                 } else {
-                    score += 0.1; // 应届生加分
+                    score += 0.05; // 应届生加分
                 }
             }
+        }
+        
+        // 基于简历类型加分
+        if (resume.getResumeType() != null && resume.getResumeType() == 2) {
+            score += 0.1; // 结构化简历加分
         }
         
         return Math.min(score, 1.0);
@@ -615,8 +620,8 @@ public class RecommendationServiceImpl implements RecommendationService {
         }
         
         // 基于技能匹配
-        if (resume.getContent() != null && job.getRequirements() != null) {
-            double skillMatch = calculateSkillMatchScore(resume.getContent(), job.getRequirements());
+        if (resume.getTitle() != null && job.getRequirements() != null) {
+            double skillMatch = calculateSkillMatchScore(resume.getTitle(), job.getRequirements());
             if (skillMatch >= 0.7) {
                 reason.append(" 技能匹配度高;");
             }

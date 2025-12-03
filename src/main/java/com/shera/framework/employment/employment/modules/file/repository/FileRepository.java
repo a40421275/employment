@@ -139,4 +139,11 @@ public interface FileRepository extends JpaRepository<File, Long> {
      * 根据文件扩展名查找文件
      */
     List<File> findByFileExtension(String fileExtension);
+
+    /**
+     * 更新最后访问时间
+     */
+    @Modifying
+    @Query("UPDATE File f SET f.lastAccessTime = :lastAccessTime WHERE f.id = :id")
+    int updateLastAccessTime(@Param("id") Long id, @Param("lastAccessTime") LocalDateTime lastAccessTime);
 }

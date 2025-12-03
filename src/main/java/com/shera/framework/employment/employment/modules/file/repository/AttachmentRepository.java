@@ -91,4 +91,18 @@ public interface AttachmentRepository extends JpaRepository<Attachment, Long>, A
      * 根据是否为临时文件统计附件数量
      */
     long countByIsTemporary(Boolean isTemporary);
+    
+    /**
+     * 根据业务类型前缀查找附件
+     * 支持模糊搜索，如传"resume_"就查询以这个开头的所有附件
+     */
+    @Query("SELECT a FROM Attachment a WHERE a.businessType LIKE :businessTypePrefix%")
+    List<Attachment> findByBusinessTypeStartingWith(@Param("businessTypePrefix") String businessTypePrefix);
+    
+    /**
+     * 根据业务类型前缀和业务ID查找附件
+     * 支持模糊搜索，如传"resume_"就查询以这个开头的所有附件
+     */
+    @Query("SELECT a FROM Attachment a WHERE a.businessType LIKE :businessTypePrefix% AND a.businessId = :businessId")
+    List<Attachment> findByBusinessTypeStartingWithAndBusinessId(@Param("businessTypePrefix") String businessTypePrefix, @Param("businessId") Long businessId);
 }

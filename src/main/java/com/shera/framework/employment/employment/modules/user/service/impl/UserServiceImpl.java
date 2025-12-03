@@ -5,6 +5,7 @@ import com.shera.framework.employment.employment.modules.user.dto.UserProfileDTO
 import com.shera.framework.employment.employment.modules.user.dto.UserWithCompanyDTO;
 import com.shera.framework.employment.employment.modules.user.entity.User;
 import com.shera.framework.employment.employment.modules.user.entity.UserProfile;
+import com.shera.framework.employment.employment.modules.message.service.EmailVerificationService;
 import com.shera.framework.employment.employment.modules.user.repository.UserProfileRepository;
 import com.shera.framework.employment.employment.modules.user.repository.UserRepository;
 import com.shera.framework.employment.employment.modules.user.service.UserService;
@@ -33,6 +34,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailVerificationService emailVerificationService;
     
     @Override
     @Transactional
@@ -192,6 +194,60 @@ public class UserServiceImpl implements UserService {
     @Override
     public Optional<User> findByWxOpenid(String wxOpenid) {
         return userRepository.findByWxOpenid(wxOpenid);
+    }
+
+    // ========== 重复校验接口实现 ==========
+
+    @Override
+    public boolean checkUsernameExists(String username) {
+        if (username == null || username.trim().isEmpty()) {
+            return false;
+        }
+        return userRepository.existsByUsername(username.trim());
+    }
+
+    @Override
+    public boolean checkPhoneExists(String phone) {
+        if (phone == null || phone.trim().isEmpty()) {
+            return false;
+        }
+        return userRepository.existsByPhone(phone.trim());
+    }
+
+    @Override
+    public boolean checkEmailExists(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            return false;
+        }
+        return userRepository.existsByEmail(email.trim());
+    }
+
+    @Override
+    public Map<String, Boolean> checkDuplicates(String username, String phone, String email) {
+        Map<String, Boolean> result = new HashMap<>();
+        
+        // 检查用户名是否重复
+        if (username != null && !username.trim().isEmpty()) {
+            result.put("usernameExists", userRepository.existsByUsername(username.trim()));
+        } else {
+            result.put("usernameExists", false);
+        }
+        
+        // 检查手机号是否重复
+        if (phone != null && !phone.trim().isEmpty()) {
+            result.put("phoneExists", userRepository.existsByPhone(phone.trim()));
+        } else {
+            result.put("phoneExists", false);
+        }
+        
+        // 检查邮箱是否重复
+        if (email != null && !email.trim().isEmpty()) {
+            result.put("emailExists", userRepository.existsByEmail(email.trim()));
+        } else {
+            result.put("emailExists", false);
+        }
+        
+        return result;
     }
     
     @Override
@@ -360,20 +416,37 @@ public class UserServiceImpl implements UserService {
         log.info("用户重置密码成功: {}", phone);
         return true;
     }
-    
+
     @Override
-    public boolean sendVerificationCode(String phone) {
-        // 这里应该集成短信服务发送验证码
-        // 暂时简化处理，直接返回成功
-        log.info("发送验证码到手机: {}", phone);
+    @Transactional
+    public boolean resetPasswordByEmail(String email, String verificationCode, String newPassword) {
+        // 使用消息管理模块验证邮箱验证码
+        if (!emailVerificationService.verifyCode(email, verificationCode, "reset_password")) {
+            throw new RuntimeException("邮箱验证码错误或已过期");
+        }
+        
+        // 根据邮箱查找用户
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("该邮箱未注册"));
+        
+        // 检查用户状态
+        if (user.getStatus() == User.Status.DISABLED.getCode()) {
+            throw new RuntimeException("用户已被禁用");
+        }
+        
+        if (user.getStatus() == User.Status.BLACKLIST.getCode()) {
+            throw new RuntimeException("用户已被加入黑名单");
+        }
+        
+        // 更新密码
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        
+        // 清除验证码，确保一次性使用
+        emailVerificationService.clearCode(email, "reset_password");
+        
+        log.info("用户通过邮箱重置密码成功: {}", email);
         return true;
-    }
-    
-    @Override
-    public boolean verifyCode(String phone, String code) {
-        // 这里应该验证验证码是否正确
-        // 暂时简化处理，假设验证码为"123456"
-        return "123456".equals(code);
     }
     
     @Override
@@ -600,6 +673,18 @@ public class UserServiceImpl implements UserService {
         behaviorStats.put("behaviorTrend", behaviorTrend);
         
         return behaviorStats;
+    }
+
+    /**
+     * 验证验证码
+     * @param phone 手机号
+     * @param code 验证码
+     * @return 验证结果
+     */
+    private boolean verifyCode(String phone, String code) {
+        // 这里应该调用短信验证服务
+        // 暂时简化处理，假设验证码为"123456"
+        return "123456".equals(code);
     }
     
     @Override

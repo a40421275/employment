@@ -42,10 +42,10 @@
 - **URL**: `POST /login`
 - **请求参数**:
   ```json
-  {
-    "account": "admin",
-    "password": "qwe123!@#"
-  }
+{
+  "account": "admin",
+  "password": "qwe123!@#"
+}
   ```
 - **响应参数**:
   ```json
@@ -395,7 +395,7 @@
   ```
 - **功能**: 修改密码
 
-### 重置密码
+### 重置密码（手机号方式）
 - **URL**: `POST /reset-password`
 - **请求参数**:
   | 参数名 | 位置 | 数据类型 | 必填 | 说明 |
@@ -411,7 +411,39 @@
     "data": null
   }
   ```
-- **功能**: 重置密码
+- **功能**: 通过手机号+验证码方式重置密码
+
+### 重置密码（邮箱+验证码方式）
+- **URL**: `POST /reset-password/email`
+- **请求参数**:
+  | 参数名 | 位置 | 数据类型 | 必填 | 说明 |
+  |--------|------|----------|------|------|
+  | email | 请求体 | String | 是 | 邮箱地址 |
+  | verificationCode | 请求体 | String | 是 | 验证码 |
+  | newPassword | 请求体 | String | 是 | 新密码 |
+  
+  **请求体示例**:
+  ```json
+  {
+    "email": "user@example.com",
+    "verificationCode": "123456",
+    "newPassword": "newpassword123"
+  }
+  ```
+- **响应参数**:
+  ```json
+  {
+    "code": 200,
+    "message": "密码重置成功",
+    "data": null
+  }
+  ```
+- **功能**: 通过邮箱+验证码方式重置密码，需要先通过消息管理模块发送邮箱验证码
+- **验证规则**:
+  - 邮箱格式必须正确
+  - 验证码必须为6位数字
+  - 新密码长度必须在6-20位之间
+  - 新密码和确认密码必须一致
 
 ### 管理员重置用户密码
 - **URL**: `POST /{id}/admin-reset-password`
@@ -429,25 +461,6 @@
   }
   ```
 - **功能**: 管理员重置用户密码（无需旧密码验证）
-
-### 发送验证码
-- **URL**: `POST /send-verification-code`
-- **请求参数**:
-  | 参数名 | 位置 | 数据类型 | 必填 | 说明 |
-  |--------|------|----------|------|------|
-  | phone | 请求体 | String | 是 | 手机号 |
-- **响应参数**:
-  ```json
-  {
-    "code": 200,
-    "message": "验证码发送成功",
-    "data": {
-      "phone": "13800138000",
-      "expireTime": "2025-11-08T12:05:00"
-    }
-  }
-  ```
-- **功能**: 发送验证码
 
 ### 分页查询用户列表
 - **URL**: `GET /`
@@ -728,6 +741,103 @@
   ```
 - **功能**: 获取用户行为统计
 
+### 检查用户名是否已存在
+- **URL**: `GET /check/username`
+- **请求参数**:
+  | 参数名 | 位置 | 数据类型 | 必填 | 说明 |
+  |--------|------|----------|------|------|
+  | username | 查询 | String | 是 | 用户名 |
+- **响应参数**:
+  ```json
+  {
+    "code": 200,
+    "message": "检查成功",
+    "data": {
+      "username": "testuser123",
+      "exists": false
+    },
+    "timestamp": "2025-11-10T22:00:00"
+  }
+  ```
+- **功能**: 检查用户名是否已被注册
+
+### 检查手机号是否已存在
+- **URL**: `GET /check/phone`
+- **请求参数**:
+  | 参数名 | 位置 | 数据类型 | 必填 | 说明 |
+  |--------|------|----------|------|------|
+  | phone | 查询 | String | 是 | 手机号 |
+- **响应参数**:
+  ```json
+  {
+    "code": 200,
+    "message": "检查成功",
+    "data": {
+      "phone": "13800138000",
+      "exists": false
+    },
+    "timestamp": "2025-11-10T22:00:00"
+  }
+  ```
+- **功能**: 检查手机号是否已被注册
+
+### 检查邮箱是否已存在
+- **URL**: `GET /check/email`
+- **请求参数**:
+  | 参数名 | 位置 | 数据类型 | 必填 | 说明 |
+  |--------|------|----------|------|------|
+  | email | 查询 | String | 是 | 邮箱地址 |
+- **响应参数**:
+  ```json
+  {
+    "code": 200,
+    "message": "检查成功",
+    "data": {
+      "email": "test@example.com",
+      "exists": false
+    },
+    "timestamp": "2025-11-10T22:00:00"
+  }
+  ```
+- **功能**: 检查邮箱是否已被注册
+
+### 批量检查账号、手机号、邮箱是否已存在
+- **URL**: `POST /check/duplicates`
+- **请求参数**:
+  | 参数名 | 位置 | 数据类型 | 必填 | 说明 |
+  |--------|------|----------|------|------|
+  | username | 请求体 | String | 否 | 用户名 |
+  | phone | 请求体 | String | 否 | 手机号 |
+  | email | 请求体 | String | 否 | 邮箱地址 |
+  
+  **请求体示例**:
+  ```json
+  {
+    "username": "testuser123",
+    "phone": "13800138000",
+    "email": "test@example.com"
+  }
+  ```
+- **响应参数**:
+  ```json
+  {
+    "code": 200,
+    "message": "检查成功",
+    "data": {
+      "username": "testuser123",
+      "phone": "13800138000",
+      "email": "test@example.com",
+      "duplicates": {
+        "usernameExists": false,
+        "phoneExists": false,
+        "emailExists": false
+      }
+    },
+    "timestamp": "2025-11-10T22:00:00"
+  }
+  ```
+- **功能**: 批量检查用户名、手机号、邮箱是否已被注册，返回每个字段的重复状态
+
 ### 更新用户状态
 - **URL**: `PUT /{id}/status`
 - **请求参数**:
@@ -813,6 +923,74 @@ curl -X POST "http://localhost:8080/api/users/login" \
 ```bash
 curl -X GET "http://localhost:8080/api/users/1" \
   -H "Authorization: Bearer {token}"
+```
+
+## 用户资料接口优化说明
+
+### DTO结构优化
+
+为了确保用户资料相关接口字段的一致性，系统进行了以下优化：
+
+#### 优化内容
+1. **分离DTO类型**：将原有的单一UserProfileDTO拆分为三个专门的DTO类型：
+   - `UserProfileCreateDTO` - 用户资料创建接口专用
+   - `UserProfileUpdateDTO` - 用户资料更新接口专用  
+   - `UserProfileDetailDTO` - 用户资料详情接口专用
+
+2. **字段一致性**：确保所有DTO类型与UserProfile实体字段保持一致，包括：
+   - 基础信息字段（真实姓名、性别、生日、头像等）
+   - 身份证信息字段（身份证正面、身份证背面）
+   - 教育和工作信息字段（学历、工作年限、当前薪资、期望薪资等）
+   - 求职偏好字段（期望城市、工作类型、行业偏好、工作模式、求职状态）
+   - 统计信息字段（简历总数、投递次数、面试次数、offer数）
+
+3. **数据转换优化**：
+   - 技能标签：支持列表格式输入，自动转换为逗号分隔字符串存储
+   - 求职偏好：支持列表格式输入，自动转换为逗号分隔字符串存储
+   - 时间字段：自动转换为字符串格式返回
+
+#### 优化效果
+- **接口清晰**：每个接口使用专门的DTO类型，职责明确
+- **字段一致**：确保创建、更新、详情接口返回相同的字段结构
+- **数据安全**：避免不必要的字段暴露，提高数据安全性
+- **开发效率**：减少字段映射错误，提高开发效率
+
+#### 响应示例
+```json
+{
+  "id": 1,
+  "userId": 1,
+  "username": "testuser",
+  "phone": "13800138000",
+  "email": "test@example.com",
+  "userType": 1,
+  "status": 1,
+  "authStatus": 0,
+  "realName": "张三",
+  "gender": 1,
+  "birthday": "1990-01-01",
+  "avatar": "https://example.com/avatar.jpg",
+  "idCardFront": "https://example.com/id-front.jpg",
+  "idCardBack": "https://example.com/id-back.jpg",
+  "education": "本科",
+  "workYears": 5,
+  "currentSalary": 15000.00,
+  "expectedSalary": 20000.00,
+  "city": "北京",
+  "skills": ["Java", "Spring Boot", "MySQL"],
+  "selfIntro": "资深Java开发工程师",
+  "preferredCities": ["北京", "上海", "深圳"],
+  "jobTypes": ["全职", "兼职"],
+  "industries": ["互联网", "软件"],
+  "workMode": "全职",
+  "jobStatus": "积极求职",
+  "totalResumes": 3,
+  "jobApplyCount": 25,
+  "interviewCount": 8,
+  "offerCount": 2,
+  "createTime": "2025-11-10T22:00:00",
+  "updateTime": "2025-11-10T22:00:00"
+}
 ```
 
 ## 性能优化说明

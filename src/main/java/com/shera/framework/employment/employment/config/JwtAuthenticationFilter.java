@@ -106,9 +106,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (path.equals("/api/users/reset-password") && "POST".equalsIgnoreCase(method)) {
             return true;
         }
+        if (path.equals("/api/users/reset-password/email") && "POST".equalsIgnoreCase(method)) {
+            return true;
+        }
+        
+        // 验证码接口
+        if (path.startsWith("/api/verification/")) {
+            return true;
+        }
         
         // 签名URL文件访问接口
         if (path.startsWith("/api/files/signed/")) {
+            return true;
+        }
+        
+        // 通过文件ID生成签名URL接口
+        if (path.startsWith("/api/files/signed/generate/by-file-id/")) {
             return true;
         }
         

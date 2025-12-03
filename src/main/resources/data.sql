@@ -20,20 +20,22 @@ SET SESSION collation_connection = utf8mb4_unicode_ci;
 DELETE FROM user_role;
 DELETE FROM role_permission;
 DELETE FROM user_profile;
-DELETE FROM user;
 DELETE FROM role;
 DELETE FROM permission;
+DELETE FROM job_apply;
 DELETE FROM job;
 DELETE FROM job_tag_relation;
 DELETE FROM job_tag;
 -- 对于有自引用外键的job_category表，先删除子分类再删除父分类
 DELETE FROM job_category WHERE parent_id IS NOT NULL; -- 先删除子分类
 DELETE FROM job_category WHERE parent_id IS NULL; -- 再删除父分类
-DELETE FROM company;
 DELETE FROM system_config;
 DELETE FROM attachment;
 DELETE FROM file;
-DELETE FROM job_apply;
+DELETE FROM admin_user;
+DELETE FROM resume;
+DELETE FROM user;
+DELETE FROM company;
 
 -- 插入基础权限数据
 INSERT INTO permission (id, name, code, description, type, parent_id, url, method, sort_order, icon, module, status, create_time, update_time) VALUES
@@ -176,10 +178,10 @@ INSERT INTO company (id, company_name, company_short_name, company_type, industr
 
 -- 插入管理员用户（密码为qwe123!@#的BCrypt加密）
 INSERT INTO user (id, username, password, email, phone, user_type, status, auth_status, company_id, create_time, update_time) VALUES
-(1, 'admin', '$2a$10$kOsvt708pMY6iUuU/eigc.w.Nbu.gD8Sxb2bCwy2nq8wkXVk7/TO2', 'admin@shera.com', '13800138000', 3, 1, 2, NULL, NOW(), NOW()),
+(1, 'admin', '$2a$10$kOsvt708pMY6iUuU/eigc.w.Nbu.gD8Sxb2bCwy2nq8wkXVk7/TO2', '1141332973@qq.com', '13800138000', 3, 1, 2, NULL, NOW(), NOW()),
 (2, 'manager', '$2a$10$kOsvt708pMY6iUuU/eigc.w.Nbu.gD8Sxb2bCwy2nq8wkXVk7/TO2', 'manager@shera.com', '13800138001', 3, 1, 2, NULL, NOW(), NOW()),
 (3, 'employer', '$2a$10$kOsvt708pMY6iUuU/eigc.w.Nbu.gD8Sxb2bCwy2nq8wkXVk7/TO2', 'employer@shera.com', '13800138002', 2, 1, 2, 1, NOW(), NOW()),
-(4, 'user', '$2a$10$kOsvt708pMY6iUuU/eigc.w.Nbu.gD8Sxb2bCwy2nq8wkXVk7/TO2', 'user@shera.com', '13800138003', 1, 1, 2, NULL, NOW(), NOW());
+(4, 'user', '$2a$10$kOsvt708pMY6iUuU/eigc.w.Nbu.gD8Sxb2bCwy2nq8wkXVk7/TO2', 'wangcheng03@cohl.com', '13800138003', 1, 1, 2, NULL, NOW(), NOW());
 
 -- 为用户分配角色
 INSERT INTO user_role (user_id, role_id, create_time) VALUES
@@ -189,11 +191,11 @@ INSERT INTO user_role (user_id, role_id, create_time) VALUES
 (4, 4, NOW()); -- user -> 普通用户
 
 -- 插入用户详细信息
-INSERT INTO user_profile (user_id, real_name, gender, birthday, education, work_years, skills, create_time, update_time) VALUES
-(1, '系统管理员', 1, '1990-01-01', '本科', 5, '系统管理,权限管理', NOW(), NOW()),
-(2, '业务经理', 1, '1985-05-15', '硕士', 8, '项目管理,团队管理', NOW(), NOW()),
-(3, '企业招聘专员', 2, '1992-08-20', '本科', 3, '招聘,人力资源管理', NOW(), NOW()),
-(4, '求职用户', 1, '1995-12-10', '本科', 2, 'Java,Spring Boot', NOW(), NOW());
+INSERT INTO user_profile (user_id, real_name, gender, birthday, avatar, id_card_front, id_card_back, education, work_years, current_salary, expected_salary, city, skills, self_intro, preferred_cities, job_types, industries, work_mode, job_status, total_resumes, job_apply_count, interview_count, offer_count, create_time, update_time) VALUES
+(1, '系统管理员', 1, '1990-01-01', '/avatars/admin.jpg', NULL, NULL, '本科', 5, 25000.00, 30000.00, '北京', '["系统管理","权限管理","Java","Spring Boot"]', '资深系统管理员，擅长权限管理和系统架构设计', '["北京","上海","深圳"]', '["全职","远程"]', '["互联网","软件"]', '全职', '在职看机会', 1, 0, 0, 0, NOW(), NOW()),
+(2, '业务经理', 1, '1985-05-15', '/avatars/manager.jpg', NULL, NULL, '硕士', 8, 30000.00, 35000.00, '北京', '["项目管理","团队管理","产品设计","数据分析"]', '经验丰富的业务经理，擅长项目管理和团队协作', '["北京","杭州"]', '["全职"]', '["互联网","金融"]', '全职', '在职看机会', 0, 0, 0, 0, NOW(), NOW()),
+(3, '企业招聘专员', 2, '1992-08-20', '/avatars/employer.jpg', NULL, NULL, '本科', 3, 15000.00, 18000.00, '上海', '["招聘","人力资源管理","沟通协调"]', '专业的企业招聘专员，擅长人才筛选和面试评估', '["上海","广州"]', '["全职"]', '["互联网","人力资源"]', '全职', '在职看机会', 0, 0, 0, 0, NOW(), NOW()),
+(4, '求职用户', 1, '1995-12-10', '/avatars/user.jpg', NULL, NULL, '本科', 2, 15000.00, 20000.00, '北京', '["Java","Spring Boot","MySQL","Redis","Vue.js"]', '热爱技术的Java开发工程师，善于学习新技术，有良好的团队协作能力', '["北京","上海","杭州","深圳"]', '["全职","实习"]', '["互联网","软件","人工智能"]', '全职', '积极求职', 3, 6, 3, 1, NOW(), NOW());
 
 -- 插入系统预定义标签（独立标签）
 INSERT IGNORE INTO `job_tag` (`tag_name`, `tag_type`, `tag_color`, `description`) VALUES
@@ -261,12 +263,12 @@ INSERT IGNORE INTO `system_config` (`config_key`, `config_value`, `description`,
 ('security_password_complexity', 'medium', '密码复杂度要求', 'security', 'STRING', 1, 0, 4, '', 'medium', '["low","medium","high"]'),
 
 -- 邮件配置
-('email_enabled', 'false', '邮件服务是否启用', 'email', 'BOOLEAN', 1, 0, 1, '', 'false', ''),
-('email_host', 'smtp.example.com', '邮件服务器地址', 'email', 'STRING', 1, 0, 2, '', 'smtp.example.com', ''),
-('email_port', '587', '邮件服务器端口', 'email', 'INTEGER', 1, 0, 3, 'min:1|max:65535', '587', ''),
-('email_username', 'noreply@example.com', '邮件用户名', 'email', 'STRING', 1, 0, 4, '', 'noreply@example.com', ''),
-('email_password', '', '邮件密码', 'email', 'STRING', 1, 0, 5, '', '', ''),
-('email_from', 'noreply@example.com', '发件人邮箱', 'email', 'STRING', 1, 0, 6, '', 'noreply@example.com', ''),
+('email_enabled', 'true', '邮件服务是否启用', 'email', 'BOOLEAN', 1, 0, 1, '', 'true', ''),
+('email_host', 'smtp.163.com', '邮件服务器地址', 'email', 'STRING', 1, 0, 2, '', 'smtp.163.com', ''),
+('email_port', '465', '邮件服务器端口', 'email', 'INTEGER', 1, 0, 3, 'min:1|max:65535', '465', ''),
+('email_username', 'wangcheng-0012@163.com', '邮件用户名', 'email', 'STRING', 1, 0, 4, '', 'wangcheng-0012@163.com', ''),
+('email_password', 'PSRV634spjyqRcGy', '邮件密码', 'email', 'STRING', 1, 0, 5, '', 'PSRV634spjyqRcGy', ''),
+('email_from', 'wangcheng-0012@163.com', '发件人邮箱', 'email', 'STRING', 1, 0, 6, '', 'wangcheng-0012@163.com', ''),
 
 -- 短信配置
 ('sms_enabled', 'false', '短信服务是否启用', 'sms', 'BOOLEAN', 1, 0, 1, '', 'false', ''),
@@ -275,10 +277,15 @@ INSERT IGNORE INTO `system_config` (`config_key`, `config_value`, `description`,
 ('sms_secret_key', '', '短信Secret Key', 'sms', 'STRING', 1, 0, 4, '', '', ''),
 ('sms_sign_name', '就业平台', '短信签名', 'sms', 'STRING', 1, 0, 5, '', '就业平台', ''),
 
+-- 微信配置
+('wechat_enabled', 'true', '微信服务是否启用', 'wechat', 'BOOLEAN', 1, 0, 1, '', 'true', ''),
+('wechat_app_id', 'wxdfe92c8f60ac272b', '微信AppID', 'wechat', 'STRING', 1, 0, 2, '', 'wxdfe92c8f60ac272b', ''),
+('wechat_app_secret', '6d9eb857335dfbcca7e1aa9414aa9e1c', '微信AppSecret', 'wechat', 'STRING', 1, 0, 3, '', '6d9eb857335dfbcca7e1aa9414aa9e1c', ''),
+('wechat_template_id', 'TEMPLATE_123456', '微信模板ID', 'wechat', 'STRING', 1, 0, 4, '', 'TEMPLATE_123456', ''),
 
 -- 通知配置
 ('notification_enabled', 'true', '通知服务是否启用', 'notification', 'BOOLEAN', 1, 0, 1, '', 'true', ''),
-('notification_types', 'email,sms,web', '通知类型', 'notification', 'STRING', 1, 0, 2, '', 'email,sms,web', '["email","sms","web"]'),
+('notification_types', 'email,sms,web,wechat', '通知类型', 'notification', 'STRING', 1, 0, 2, '', 'email,sms,web,wechat', '["email","sms","web","wechat"]'),
 ('notification_push_interval', '60', '通知推送间隔（秒）', 'notification', 'INTEGER', 1, 0, 3, 'min:1|max:3600', '60', ''),
 
 -- 分析配置
@@ -626,27 +633,200 @@ UPDATE `file` SET `reference_count` = (
     SELECT COUNT(*) FROM `attachment` WHERE `attachment`.`file_id` = `file`.`id` AND `attachment`.`status` = 1
 ) WHERE `id` IN (SELECT `file_id` FROM `attachment` WHERE `status` = 1);
 
+-- 消息管理模块初始化数据
+
+-- 先删除已有消息数据（避免重复插入）
+DELETE FROM message;
+DELETE FROM message_template;
+
+-- 插入消息模板测试数据
+INSERT IGNORE INTO `message_template` (
+    `id`, `name`, `channel_type`, `subject`, `content`, `variables`, `status`, `description`, `create_time`, `update_time`
+) VALUES
+-- 邮件模板
+(1, '用户注册欢迎邮件', 'email', '欢迎加入就业服务平台', 
+ '亲爱的{{userName}}，\n\n欢迎您注册就业服务平台！我们致力于为您提供最优质的就业服务。\n\n您的账号信息：\n- 用户名：{{userName}}\n- 注册时间：{{registerTime}}\n\n如有任何问题，请随时联系我们的客服。\n\n祝您使用愉快！\n就业服务平台团队',
+ '{"userName": "用户名", "registerTime": "注册时间"}', 1, '用户注册成功后发送的欢迎邮件模板', NOW(), NOW()),
+
+(2, '岗位申请通知邮件', 'email', '您的岗位申请已提交成功', 
+ '亲爱的{{userName}}，\n\n您已成功申请了以下岗位：\n- 岗位名称：{{jobTitle}}\n- 公司名称：{{companyName}}\n- 申请时间：{{applyTime}}\n\n我们会尽快处理您的申请，请保持手机畅通。\n\n祝您求职顺利！\n就业服务平台团队',
+ '{"userName": "用户名", "jobTitle": "岗位名称", "companyName": "公司名称", "applyTime": "申请时间"}', 1, '用户提交岗位申请后发送的通知邮件模板', NOW(), NOW()),
+
+(3, '面试通知邮件', 'email', '面试邀请通知', 
+ '亲爱的{{userName}}，\n\n恭喜您！您申请的{{jobTitle}}岗位已通过初步筛选，现邀请您参加面试。\n\n面试信息：\n- 面试时间：{{interviewTime}}\n- 面试地点：{{interviewLocation}}\n- 联系人：{{contactPerson}}\n- 联系电话：{{contactPhone}}\n\n请提前10分钟到达面试地点，并携带相关材料。\n\n祝您面试顺利！\n{{companyName}}人力资源部',
+ '{"userName": "用户名", "jobTitle": "岗位名称", "companyName": "公司名称", "interviewTime": "面试时间", "interviewLocation": "面试地点", "contactPerson": "联系人", "contactPhone": "联系电话"}', 1, '发送给用户的面试通知邮件模板', NOW(), NOW()),
+
+(4, '密码重置邮件', 'email', '密码重置通知', 
+ '亲爱的{{userName}}，\n\n您正在进行密码重置操作。\n\n验证码：{{verificationCode}}\n有效期：{{expireTime}}分钟\n\n如非本人操作，请忽略此邮件。\n\n就业服务平台团队',
+ '{"userName": "用户名", "verificationCode": "验证码", "expireTime": "有效期"}', 1, '密码重置验证码邮件模板', NOW(), NOW()),
+
+-- 短信模板
+(5, '验证码短信', 'sms', NULL, 
+ '【就业平台】您的验证码是{{code}}，有效期{{minutes}}分钟，请勿泄露给他人。',
+ '{"code": "验证码", "minutes": "有效期"}', 1, '通用验证码短信模板', NOW(), NOW()),
+
+(6, '岗位申请成功短信', 'sms', NULL, 
+ '【就业平台】您已成功申请{{companyName}}的{{jobTitle}}岗位，我们会尽快处理您的申请。',
+ '{"companyName": "公司名称", "jobTitle": "岗位名称"}', 1, '岗位申请成功短信模板', NOW(), NOW()),
+
+-- 微信模板
+(7, '系统通知微信模板', 'wechat', NULL, 
+ '【系统通知】\n{{title}}\n{{content}}\n\n{{time}}',
+ '{"title": "通知标题", "content": "通知内容", "time": "发送时间"}', 1, '系统通知微信模板', NOW(), NOW()),
+
+-- 推送模板
+(8, '岗位推荐推送', 'push', NULL, 
+ '为您推荐新岗位：{{jobTitle}}\n{{companyName}} | {{salaryRange}}\n{{location}}',
+ '{"jobTitle": "岗位名称", "companyName": "公司名称", "salaryRange": "薪资范围", "location": "工作地点"}', 1, '岗位推荐推送模板', NOW(), NOW());
+
+-- 插入消息测试数据
+INSERT IGNORE INTO `message` (
+    `id`, `title`, `content`, `sender_id`, `receiver_id`, `type`, `priority`, `status`, 
+    `read_time`, `expire_time`, `business_id`, `business_type`, `template_id`, `channel_type`, 
+    `send_result`, `attachments`, `create_time`, `update_time`
+) VALUES
+-- 系统消息（类型1）
+(1, '欢迎使用就业服务平台', '欢迎您注册就业服务平台！我们致力于为您提供最优质的就业服务。如有任何问题，请随时联系客服。', 
+ 1, 4, 1, 2, 1, 
+ NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), NULL, NULL, 1, 'email', 
+ '{"status": "success", "sentTime": "2024-11-24 10:00:00"}', NULL, NOW(), NOW()),
+
+(2, '系统维护通知', '系统将于2024年11月25日凌晨2:00-4:00进行维护，期间可能无法正常访问，给您带来的不便敬请谅解。', 
+ 1, 4, 1, 2, 0, 
+ NULL, DATE_ADD(NOW(), INTERVAL 7 DAY), NULL, NULL, NULL, 'push', 
+ '{"status": "pending"}', NULL, NOW(), NOW()),
+
+(3, '新功能上线通知', '我们已上线简历智能匹配功能，现在可以为您推荐更精准的岗位了！快去试试吧。', 
+ 1, 4, 1, 1, 0, 
+ NULL, DATE_ADD(NOW(), INTERVAL 30 DAY), NULL, NULL, NULL, 'wechat', 
+ '{"status": "success", "sentTime": "2024-11-24 09:30:00"}', NULL, NOW(), NOW()),
+
+-- 用户消息（类型2）
+(4, '您有新的好友请求', '用户"张经理"向您发送了好友请求，请及时处理。', 
+ 2, 4, 2, 1, 0, 
+ NULL, DATE_ADD(NOW(), INTERVAL 7 DAY), NULL, 'friend_request', NULL, 'push', 
+ '{"status": "success", "sentTime": "2024-11-24 09:15:00"}', NULL, NOW(), NOW()),
+
+(5, '简历被查看通知', '您的简历已被"示例科技有限公司"查看，请保持手机畅通。', 
+ 3, 4, 2, 2, 1, 
+ NOW(), DATE_ADD(NOW(), INTERVAL 7 DAY), 1, 'resume_view', NULL, 'email', 
+ '{"status": "success", "sentTime": "2024-11-24 08:45:00"}', NULL, NOW(), NOW()),
+
+(6, '企业认证通过', '恭喜！您的企业认证申请已通过审核，现在可以发布岗位了。', 
+ 1, 3, 2, 2, 1, 
+ NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 1, 'company_auth', NULL, 'sms', 
+ '{"status": "success", "sentTime": "2024-11-23 16:20:00"}', NULL, NOW(), NOW()),
+
+-- 岗位消息（类型3）
+(7, '岗位申请成功', '您已成功申请"Java后端开发工程师"岗位，我们会尽快处理您的申请。', 
+ 1, 4, 3, 2, 1, 
+ NOW(), DATE_ADD(NOW(), INTERVAL 7 DAY), 1, 'job_apply', 2, 'email', 
+ '{"status": "success", "sentTime": "2024-11-23 14:30:00"}', NULL, NOW(), NOW()),
+
+(8, '面试邀请通知', '恭喜！您申请的"Java后端开发工程师"岗位已通过初步筛选，现邀请您参加面试。', 
+ 3, 4, 3, 3, 1, 
+ NOW(), DATE_ADD(NOW(), INTERVAL 3 DAY), 1, 'job_interview', 3, 'email', 
+ '{"status": "success", "sentTime": "2024-11-23 15:00:00"}', 
+ '[{"name": "面试须知.pdf", "url": "/files/interview_guide.pdf"}]', NOW(), NOW()),
+
+(9, '岗位申请状态更新', '您申请的"前端开发工程师"岗位状态已更新为"已查看"。', 
+ 1, 4, 3, 1, 0, 
+ NULL, DATE_ADD(NOW(), INTERVAL 7 DAY), 2, 'job_apply_status', NULL, 'push', 
+ '{"status": "success", "sentTime": "2024-11-24 08:00:00"}', NULL, NOW(), NOW()),
+
+(10, '录用通知', '恭喜！您已通过"软件测试工程师"岗位的面试，现正式向您发出录用通知。', 
+ 2, 4, 3, 3, 0, 
+ NULL, DATE_ADD(NOW(), INTERVAL 7 DAY), 4, 'job_offer', NULL, 'email', 
+ '{"status": "pending"}', 
+ '[{"name": "录用通知书.pdf", "url": "/files/offer_letter.pdf"}, {"name": "入职须知.docx", "url": "/files/onboarding_guide.docx"}]', NOW(), NOW()),
+
+-- 更多测试消息
+(11, '密码重置验证码', '您的密码重置验证码是：123456，有效期10分钟。', 
+ 1, 4, 1, 3, 1, 
+ NOW(), DATE_ADD(NOW(), INTERVAL 10 MINUTE), NULL, 'password_reset', 4, 'sms', 
+ '{"status": "success", "sentTime": "2024-11-24 10:05:00"}', NULL, NOW(), NOW()),
+
+(12, '岗位推荐', '为您推荐新岗位：Android开发工程师，示例科技，薪资13-22K，北京。', 
+ 1, 4, 3, 1, 0, 
+ NULL, DATE_ADD(NOW(), INTERVAL 3 DAY), 3, 'job_recommend', 8, 'push', 
+ '{"status": "success", "sentTime": "2024-11-24 09:00:00"}', NULL, NOW(), NOW()),
+
+(13, '简历完善提醒', '您的简历完整度为75%，完善简历可获得更多岗位推荐。', 
+ 1, 4, 1, 1, 0, 
+ NULL, DATE_ADD(NOW(), INTERVAL 7 DAY), NULL, 'resume_reminder', NULL, 'wechat', 
+ '{"status": "success", "sentTime": "2024-11-24 08:30:00"}', NULL, NOW(), NOW()),
+
+(14, '企业消息测试', '测试企业向用户发送的消息内容。', 
+ 3, 4, 2, 2, 0, 
+ NULL, DATE_ADD(NOW(), INTERVAL 7 DAY), NULL, 'company_message', NULL, 'email', 
+ '{"status": "pending"}', NULL, NOW(), NOW()),
+
+(15, '系统公告', '平台将于下周一进行功能升级，届时部分功能可能暂时无法使用。', 
+ 1, 4, 1, 2, 0, 
+ NULL, DATE_ADD(NOW(), INTERVAL 14 DAY), NULL, 'system_announcement', NULL, 'push', 
+ '{"status": "success", "sentTime": "2024-11-24 07:00:00"}', NULL, NOW(), NOW());
+
+
+
+-- 插入简历测试数据（重构后）
+INSERT IGNORE INTO `resume` (
+    `id`, `user_id`, `title`, `resume_type`, `file_url`, `file_type`, `is_default`, `privacy_level`, 
+    `sync_profile_data`, `last_sync_time`, `view_count`, `download_count`, `share_count`, `last_view_time`, 
+    `structured_data`, `template_style`, `color_scheme`, `font_family`, `show_photo`, `show_salary`, 
+    `create_time`, `update_time`
+) VALUES
+-- 附件简历（类型1）
+(1, 4, 'Java开发工程师简历', 1, '/uploads/resumes/4/java_developer.pdf', 'pdf', 1, 1, 
+ 1, NOW(), 45, 12, 3, NOW(), 
+ NULL, 'modern', 'blue', 'Arial', 1, 0, 
+ NOW(), NOW()),
+(2, 4, '全栈开发工程师简历', 1, '/uploads/resumes/4/fullstack_developer.pdf', 'pdf', 0, 1, 
+ 0, NULL, 23, 5, 1, '2024-11-20 10:30:00', 
+ NULL, 'classic', 'green', 'Microsoft YaHei', 1, 1, 
+ NOW(), NOW()),
+(3, 1, '系统管理员简历', 1, '/uploads/resumes/1/system_admin.pdf', 'pdf', 0, 2, 
+ 1, NOW(), 12, 3, 0, '2024-11-18 14:20:00', 
+ NULL, 'professional', 'dark', 'Consolas', 1, 0, 
+ NOW(), NOW()),
+
+-- 结构化简历（类型2）
+(4, 4, 'Java开发工程师结构化简历', 2, NULL, NULL, 0, 1, 
+ 1, NOW(), 67, 18, 5, NOW(), 
+ '{"educations":[{"school":"北京大学","major":"计算机科学与技术","degree":"本科","startDate":"2014-09-01","endDate":"2018-06-30","isCurrent":false,"description":"主修计算机相关课程，获得优秀毕业生称号"}],"workExperiences":[{"company":"某科技公司","position":"Java开发工程师","industry":"互联网","startDate":"2018-07-01","endDate":"2020-06-30","isCurrent":false,"department":"技术部","salary":15000.0,"description":"负责公司核心业务系统开发，参与系统架构设计","achievements":["优化系统性能，提升响应速度30%","参与微服务架构改造"]}],"skills":[{"category":"后端技术","name":"Java","proficiency":4,"years":3,"description":"熟练掌握Java语言特性，熟悉JVM调优"},{"category":"后端技术","name":"Spring Boot","proficiency":4,"years":2,"description":"熟练使用Spring Boot框架开发微服务"},{"category":"数据库","name":"MySQL","proficiency":3,"years":3,"description":"熟悉MySQL数据库设计和优化"},{"category":"中间件","name":"Redis","proficiency":3,"years":2,"description":"熟悉Redis缓存使用和集群部署"}],"projects":[{"name":"电商平台系统","role":"后端开发工程师","startDate":"2019-03-01","endDate":"2020-02-28","description":"负责订单模块和支付模块的开发","technologies":["Spring Boot","MySQL","Redis","RabbitMQ"],"responsibilities":["订单模块开发","支付系统集成","性能优化"],"achievements":["系统日处理订单量达到10万+","支付成功率提升到99.5%"]}],"certificates":[{"name":"Java高级工程师认证","issuingAuthority":"Oracle","issueDate":"2019-05-15","expiryDate":"2022-05-15","level":"高级","description":"Oracle官方Java高级工程师认证"}]}', 
+ 'modern', 'blue', 'Arial', 1, 0, 
+ NOW(), NOW()),
+(5, 4, '全栈开发工程师结构化简历', 2, NULL, NULL, 0, 1, 
+ 0, NULL, 34, 8, 2, '2024-11-22 09:15:00', 
+ '{"educations":[{"school":"清华大学","major":"软件工程","degree":"本科","startDate":"2014-09-01","endDate":"2018-06-30","isCurrent":false,"description":"主修软件工程相关课程，参与多个项目开发"}],"workExperiences":[{"company":"某互联网公司","position":"全栈开发工程师","industry":"互联网","startDate":"2020-07-01","endDate":"2022-06-30","isCurrent":false,"department":"研发部","salary":18000.0,"description":"负责公司产品的前后端开发工作","achievements":["独立完成多个项目的前后端开发","优化系统架构，提升开发效率"]}],"skills":[{"category":"后端技术","name":"Java","proficiency":4,"years":3,"description":"熟练掌握Java语言特性"},{"category":"后端技术","name":"Spring Boot","proficiency":4,"years":2,"description":"熟练使用Spring Boot框架"},{"category":"前端技术","name":"React","proficiency":3,"years":2,"description":"熟悉React框架开发"},{"category":"前端技术","name":"Vue.js","proficiency":3,"years":1,"description":"熟悉Vue.js框架"}],"projects":[{"name":"在线教育平台","role":"全栈开发工程师","startDate":"2021-01-01","endDate":"2021-12-31","description":"负责平台的前后端开发和维护","technologies":["Spring Boot","React","MySQL","Redis"],"responsibilities":["前端页面开发","后端API设计","数据库设计"],"achievements":["平台用户数达到50万+","系统稳定性达到99.9%"]}],"certificates":[{"name":"AWS认证开发者","issuingAuthority":"Amazon","issueDate":"2021-08-10","expiryDate":"2024-08-10","level":"专业级","description":"AWS云服务开发认证"}]}', 
+ 'classic', 'green', 'Microsoft YaHei', 1, 1, 
+ NOW(), NOW()),
+(6, 1, '系统管理员结构化简历', 2, NULL, NULL, 1, 2, 
+ 1, NOW(), 18, 4, 1, '2024-11-19 16:45:00', 
+ '{"educations":[{"school":"北京邮电大学","major":"网络工程","degree":"本科","startDate":"2008-09-01","endDate":"2012-06-30","isCurrent":false,"description":"主修网络工程相关课程"}],"workExperiences":[{"company":"某大型互联网公司","position":"系统管理员","industry":"互联网","startDate":"2012-07-01","endDate":"2017-06-30","isCurrent":false,"department":"运维部","salary":25000.0,"description":"负责公司服务器和网络设备的运维管理","achievements":["建立完善的监控体系","优化系统架构，提升系统稳定性"]}],"skills":[{"category":"系统管理","name":"Linux","proficiency":4,"years":5,"description":"精通Linux系统管理和优化"},{"category":"系统管理","name":"Docker","proficiency":4,"years":3,"description":"熟练使用Docker容器技术"},{"category":"系统管理","name":"Kubernetes","proficiency":3,"years":2,"description":"熟悉Kubernetes集群管理"},{"category":"网络技术","name":"TCP/IP","proficiency":4,"years":5,"description":"精通TCP/IP网络协议"}],"projects":[{"name":"企业私有云平台","role":"系统架构师","startDate":"2016-01-01","endDate":"2017-06-30","description":"负责企业私有云平台的架构设计和实施","technologies":["OpenStack","Docker","Kubernetes","Ceph"],"responsibilities":["系统架构设计","技术选型","团队管理"],"achievements":["平台支持1000+虚拟机","资源利用率提升40%"]}],"certificates":[{"name":"RHCE认证","issuingAuthority":"Red Hat","issueDate":"2015-03-15","expiryDate":"2018-03-15","level":"专家级","description":"红帽认证工程师"}],"settings":{"isDefault":true,"privacyLevel":2,"templateStyle":"professional","colorScheme":"dark","fontFamily":"Consolas","showPhoto":true,"showSalary":false}}', 
+ 'professional', 'dark', 'Consolas', 1, 0, 
+ NOW(), NOW());
+
 -- 插入岗位申请测试数据
 INSERT IGNORE INTO `job_apply` (
     `id`, `job_id`, `user_id`, `resume_id`, `status`, `match_score`, 
     `apply_notes`, `interview_time`, `interview_location`, `feedback`, 
     `create_time`, `update_time`
 ) VALUES
-(1, 1, 4, 8, 1, 85.5, 
+(1, 1, 4, 1, 1, 85.5, 
  '对Java开发岗位很感兴趣，希望有机会加入贵公司', NULL, 
  NULL, NULL, NOW(), NOW()),
-(2, 2, 4, 8, 2, 78.2, 
+(2, 2, 4, 1, 2, 78.2, 
  '前端开发经验丰富，熟悉Vue.js和React技术栈', NULL, 
  NULL, '简历符合要求，等待进一步沟通', NOW(), NOW()),
-(3, 3, 4, 8, 3, 82.7, 
+(3, 3, 4, 1, 3, 82.7, 
  '有Android开发经验，熟悉Java和Kotlin', '2024-11-20 14:00:00', 
  '北京市中关村大街1号示例科技公司', '技术能力符合要求，安排技术面试', NOW(), NOW()),
-(4, 4, 4, 8, 4, 76.8, 
+(4, 4, 4, 2, 4, 76.8, 
  '软件测试经验丰富，熟悉自动化测试工具', '2024-11-18 10:00:00', 
  '上海市浦东新区张江高科技园区测试企业', '面试表现优秀，符合岗位要求', NOW(), NOW()),
-(5, 5, 4, 8, 5, 88.3, 
+(5, 5, 4, 2, 5, 88.3, 
  '运维经验丰富，熟悉Linux和Docker技术', '2024-11-17 09:00:00', 
  '上海市浦东新区张江高科技园区测试企业', '恭喜您被录用，请准备入职材料', NOW(), NOW()),
-(6, 8, 4, 8, 6, 65.4, 
+(6, 8, 4, 2, 6, 65.4, 
  '数据分析经验较少，希望学习成长', NULL, 
  NULL, '岗位要求与简历匹配度不高，建议关注其他更适合的岗位', NOW(), NOW());

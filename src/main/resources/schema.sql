@@ -37,35 +37,61 @@ CREATE TABLE IF NOT EXISTS `user_profile` (
     `current_salary` DECIMAL(10,2) COMMENT '当前薪资',
     `expected_salary` DECIMAL(10,2) COMMENT '期望薪资',
     `city` VARCHAR(100) COMMENT '所在城市',
-    `skills` TEXT COMMENT '技能标签，JSON格式',
+    `skills` TEXT COMMENT '技能标签，逗号分隔',
     `self_intro` TEXT COMMENT '自我介绍',
+    `preferred_cities` TEXT COMMENT '期望城市，逗号分隔',
+    `job_types` TEXT COMMENT '工作类型，逗号分隔',
+    `industries` TEXT COMMENT '期望行业，逗号分隔',
+    `work_mode` VARCHAR(50) COMMENT '工作模式：全职/兼职/实习/远程',
+    `job_status` VARCHAR(50) COMMENT '求职状态：在职-看机会/离职-随时到岗/在校-实习',
+    `job_apply_count` INT NOT NULL DEFAULT 0 COMMENT '投递次数',
+    `interview_count` INT NOT NULL DEFAULT 0 COMMENT '面试次数',
+    `offer_count` INT NOT NULL DEFAULT 0 COMMENT '录用次数',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_user_id` (`user_id`),
     INDEX `idx_city` (`city`),
     INDEX `idx_education` (`education`),
+    INDEX `idx_work_years` (`work_years`),
+    INDEX `idx_expected_salary` (`expected_salary`),
     FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户资料表';
 
--- 简历表
+-- 简历表（重构后）
 CREATE TABLE IF NOT EXISTS `resume` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
     `user_id` BIGINT NOT NULL COMMENT '用户ID',
     `title` VARCHAR(100) NOT NULL COMMENT '简历标题',
-    `content` TEXT COMMENT '简历内容（JSON格式）',
+    `resume_type` TINYINT NOT NULL DEFAULT 1 COMMENT '简历类型：1-附件简历，2-结构化简历',
     `file_url` VARCHAR(500) COMMENT '简历文件URL',
     `file_type` VARCHAR(20) COMMENT '文件类型：pdf/doc/docx',
     `is_default` TINYINT NOT NULL DEFAULT 0 COMMENT '是否默认简历：0-否，1-是',
     `privacy_level` TINYINT NOT NULL DEFAULT 1 COMMENT '隐私级别：1-公开，2-仅投递企业，3-隐藏',
+    `sync_profile_data` TINYINT NOT NULL DEFAULT 0 COMMENT '是否同步用户资料：0-否，1-是',
+    `last_sync_time` DATETIME COMMENT '最后同步时间',
     `view_count` INT NOT NULL DEFAULT 0 COMMENT '被查看次数',
+    `download_count` INT NOT NULL DEFAULT 0 COMMENT '下载次数',
+    `share_count` INT NOT NULL DEFAULT 0 COMMENT '分享次数',
+    `last_view_time` DATETIME COMMENT '最后查看时间',
+    `structured_data` TEXT COMMENT '结构化简历数据（JSON格式）',
+    `basic_info` TEXT COMMENT '基础信息（JSON格式）',
+    `template_style` VARCHAR(50) COMMENT '模板样式',
+    `color_scheme` VARCHAR(50) COMMENT '配色方案',
+    `font_family` VARCHAR(50) COMMENT '字体',
+    `show_photo` TINYINT NOT NULL DEFAULT 1 COMMENT '是否显示照片：0-否，1-是',
+    `show_salary` TINYINT NOT NULL DEFAULT 0 COMMENT '是否显示薪资：0-否，1-是',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_resume_type` (`resume_type`),
     INDEX `idx_is_default` (`is_default`),
+    INDEX `idx_privacy_level` (`privacy_level`),
+    INDEX `idx_sync_profile_data` (`sync_profile_data`),
+    INDEX `idx_last_view_time` (`last_view_time`),
     FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='简历表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='简历表（重构后）';
 
 -- 实名认证记录表
 CREATE TABLE IF NOT EXISTS `auth_log` (
@@ -471,6 +497,61 @@ CREATE TABLE IF NOT EXISTS `attachment` (
     FOREIGN KEY (`file_id`) REFERENCES `file`(`id`) ON DELETE CASCADE,
     FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='附件表 - 保存文件的业务属性';
+
+-- 消息表
+CREATE TABLE IF NOT EXISTS `message` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `title` VARCHAR(200) NOT NULL COMMENT '消息标题',
+    `content` TEXT NOT NULL COMMENT '消息内容',
+    `sender_id` BIGINT NOT NULL COMMENT '发送者ID',
+    `receiver_id` BIGINT NOT NULL COMMENT '接收者ID',
+    `type` TINYINT NOT NULL COMMENT '消息类型：1-系统消息，2-用户消息，3-岗位消息',
+    `priority` TINYINT NOT NULL DEFAULT 1 COMMENT '优先级：1-低，2-中，3-高',
+    `status` TINYINT NOT NULL DEFAULT 0 COMMENT '消息状态：0-未读，1-已读，2-删除',
+    `read_time` DATETIME COMMENT '阅读时间',
+    `expire_time` DATETIME COMMENT '过期时间',
+    `business_id` BIGINT COMMENT '关联的业务ID（如岗位ID、简历ID等）',
+    `business_type` VARCHAR(50) COMMENT '业务类型',
+    `template_id` BIGINT COMMENT '消息模板ID',
+    `channel_type` VARCHAR(20) COMMENT '发送渠道类型：email-邮件，sms-短信，wechat-微信，push-推送',
+    `send_result` TEXT COMMENT '发送结果（JSON格式，包含发送状态、错误信息等）',
+    `attachments` TEXT COMMENT '附件信息（JSON格式）',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    INDEX `idx_sender_id` (`sender_id`),
+    INDEX `idx_receiver_id` (`receiver_id`),
+    INDEX `idx_type` (`type`),
+    INDEX `idx_status` (`status`),
+    INDEX `idx_priority` (`priority`),
+    INDEX `idx_expire_time` (`expire_time`),
+    INDEX `idx_business` (`business_id`, `business_type`),
+    INDEX `idx_template_id` (`template_id`),
+    INDEX `idx_channel_type` (`channel_type`),
+    INDEX `idx_create_time` (`create_time`),
+    FOREIGN KEY (`sender_id`) REFERENCES `user`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`receiver_id`) REFERENCES `user`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`template_id`) REFERENCES `message_template`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='消息表';
+
+-- 消息模板表
+CREATE TABLE IF NOT EXISTS `message_template` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(100) NOT NULL COMMENT '模板名称',
+    `channel_type` VARCHAR(20) NOT NULL COMMENT '模板类型：email-邮件，sms-短信，wechat-微信，push-推送',
+    `subject` VARCHAR(200) COMMENT '邮件主题（仅邮件模板使用）',
+    `content` TEXT NOT NULL COMMENT '模板内容',
+    `variables` TEXT COMMENT '模板变量（JSON格式）',
+    `status` TINYINT NOT NULL DEFAULT 1 COMMENT '模板状态：0-禁用，1-启用',
+    `description` VARCHAR(500) COMMENT '模板描述',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_name_type` (`name`, `type`),
+    INDEX `idx_type` (`type`),
+    INDEX `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='消息模板表';
+
 
 -- 设置数据库字符集（确保中文支持）
 ALTER DATABASE employment_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

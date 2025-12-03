@@ -67,6 +67,35 @@ public class UserProfile extends BaseEntity {
     @Column(name = "self_intro", columnDefinition = "TEXT")
     private String selfIntro;
     
+    // 求职偏好
+    @Column(name = "preferred_cities", columnDefinition = "TEXT")
+    private String preferredCities; // JSON格式的期望城市列表
+    
+    @Column(name = "job_types", columnDefinition = "TEXT")
+    private String jobTypes; // JSON格式的工作类型列表
+    
+    @Column(name = "industries", columnDefinition = "TEXT")
+    private String industries; // JSON格式的行业偏好列表
+    
+    @Column(name = "work_mode", length = 20)
+    private String workMode; // 工作模式：全职/兼职/实习
+    
+    @Column(name = "job_status", length = 20)
+    private String jobStatus; // 求职状态：积极求职/观望中/在职看机会
+    
+    // 统计信息
+    @Column(name = "total_resumes")
+    private Integer totalResumes = 0; // 简历总数
+    
+    @Column(name = "job_apply_count")
+    private Integer jobApplyCount = 0; // 投递次数
+    
+    @Column(name = "interview_count")
+    private Integer interviewCount = 0; // 面试次数
+    
+    @Column(name = "offer_count")
+    private Integer offerCount = 0; // 收到offer数
+    
     // 性别枚举
     public enum Gender {
         UNKNOWN(0, "未知"),

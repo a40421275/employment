@@ -78,7 +78,7 @@
 ### 两步式上传绑定方案
 
 #### 第一步：上传文件到文件池
-将文件上传到文件池，返回文件ID。
+将文件上传到文件池，返回文件ID。支持自定义文件名，不依赖上传文件的实际名称。
 
 ```http
 POST /api/files/upload/pool
@@ -88,6 +88,7 @@ Content-Type: multipart/form-data
 - file: 文件 (必填)
 - userId: 用户ID (必填)
 - fileType: 文件类型 (必填)
+- fileName: 自定义文件名 (可选，如不提供则使用原始文件名)
 ```
 
 响应:
@@ -101,6 +102,12 @@ Content-Type: multipart/form-data
   "timestamp": "2025-11-17T00:54:23"
 }
 ```
+
+**文件名管理说明：**
+- `fileName` 字段保存用户自定义的文件名，用于显示和下载
+- `originalName` 字段保存上传文件的原始文件名，用于记录
+- 物理文件存储路径使用UUID，确保文件系统安全
+- 支持用户自定义文件名，不依赖上传文件的实际名称
 
 #### 第二步：创建附件记录
 将文件池中的文件绑定到具体业务，创建附件记录。
@@ -185,6 +192,24 @@ GET /api/files/signed/generate/{attachmentId}
 }
 ```
 
+#### 通过文件ID生成签名文件URL（用于前端图片访问）
+```http
+GET /api/files/signed/generate/by-file-id/{fileId}
+```
+
+响应:
+```json
+{
+  "code": 200,
+  "message": "通过文件ID生成签名URL成功",
+  "data": {
+    "signedUrl": "/api/files/signed/?fileId=456&expires=1700000000&signature=xyz789abc123...",
+    "fileId": 456
+  },
+  "timestamp": "2025-11-17T00:54:23"
+}
+```
+
 ### 临时文件管理
 
 #### 上传临时文件（7天过期）
@@ -247,6 +272,13 @@ Content-Type: application/json
 #### 下载文件
 ```http
 GET /api/files/download/{attachmentId}
+```
+
+响应: 文件二进制流
+
+#### 通过文件ID下载文件
+```http
+GET /api/files/download/by-file-id/{fileId}
 ```
 
 响应: 文件二进制流
@@ -566,6 +598,195 @@ GET /api/files/find/by-hash
     "fileId": 1,
     "exists": true
   },
+  "timestamp": "2025-11-17T00:54:23"
+}
+```
+
+### 附件删除功能
+
+#### 只删除附件记录，不删除物理文件
+适用于需要保留文件但删除业务关联的场景，如业务数据清理但保留文件用于其他用途。
+
+```http
+DELETE /api/files/attachment/{attachmentId}/only
+```
+
+响应:
+```json
+{
+  "code": 200,
+  "message": "附件记录删除成功（保留物理文件）",
+  "data": {
+    "success": true
+  },
+  "timestamp": "2025-11-17T00:54:23"
+}
+```
+
+#### 批量只删除附件记录，不删除物理文件
+```http
+DELETE /api/files/attachment/batch-delete-only
+Content-Type: application/json
+
+参数:
+{
+  "attachmentIds": [1, 2, 3]
+}
+```
+
+响应:
+```json
+{
+  "code": 200,
+  "message": "批量附件记录删除成功（保留物理文件）",
+  "data": {
+    "success": true
+  },
+  "timestamp": "2025-11-17T00:54:23"
+}
+```
+
+### 附件编辑功能
+
+附件编辑功能支持后期编辑更改文件关联，包括更新附件元数据、更换文件关联、更新业务信息等操作。
+
+#### 更新附件信息（支持完整更新）
+```http
+PUT /api/files/attachment/update
+Content-Type: application/json
+
+参数:
+{
+  "attachmentId": 1,
+  "userId": 1,
+  "newFileId": 2,
+  "businessType": "resume",
+  "businessId": 123,
+  "description": "更新后的简历描述",
+  "tags": "简历,求职,Java,Spring",
+  "isPublic": true,
+  "isTemporary": false,
+  "expireTime": "2025-12-31T23:59:59",
+  "status": 1
+}
+```
+
+响应:
+```json
+{
+  "code": 200,
+  "message": "附件更新成功",
+  "data": {
+    "success": true
+  },
+  "timestamp": "2025-11-17T00:54:23"
+}
+```
+
+#### 更换附件关联的文件
+```http
+PUT /api/files/attachment/change-file
+Content-Type: application/json
+
+参数:
+{
+  "attachmentId": 1,
+  "userId": 1,
+  "newFileId": 2
+}
+```
+
+响应:
+```json
+{
+  "code": 200,
+  "message": "附件文件更换成功",
+  "data": {
+    "success": true
+  },
+  "timestamp": "2025-11-17T00:54:23"
+}
+```
+
+#### 更新附件业务信息
+```http
+PUT /api/files/attachment/update-business
+Content-Type: application/json
+
+参数:
+{
+  "attachmentId": 1,
+  "userId": 1,
+  "businessType": "resume",
+  "businessId": 456
+}
+```
+
+响应:
+```json
+{
+  "code": 200,
+  "message": "附件业务信息更新成功",
+  "data": {
+    "success": true
+  },
+  "timestamp": "2025-11-17T00:54:23"
+}
+```
+
+#### 批量更新附件状态
+```http
+PUT /api/files/attachment/batch-update-status
+Content-Type: application/json
+
+参数:
+{
+  "attachmentIds": [1, 2, 3],
+  "userId": 1,
+  "status": 2
+}
+```
+
+响应:
+```json
+{
+  "code": 200,
+  "message": "批量更新附件状态成功",
+  "data": {
+    "success": true
+  },
+  "timestamp": "2025-11-17T00:54:23"
+}
+```
+
+#### 获取附件编辑历史
+```http
+GET /api/files/attachment/{attachmentId}/history
+```
+
+响应:
+```json
+{
+  "code": 200,
+  "message": "获取附件编辑历史成功",
+  "data": [
+    {
+      "operation": "UPDATE",
+      "field": "description",
+      "oldValue": "旧描述",
+      "newValue": "新描述",
+      "operator": "system",
+      "operationTime": "2025-11-17T14:00:00"
+    },
+    {
+      "operation": "CHANGE_FILE",
+      "field": "fileId",
+      "oldValue": "123",
+      "newValue": "456",
+      "operator": "system",
+      "operationTime": "2025-11-16T10:30:00"
+    }
+  ],
   "timestamp": "2025-11-17T00:54:23"
 }
 ```

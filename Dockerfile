@@ -10,10 +10,12 @@ COPY settings.xml pom.xml /app/
 
 # 执行代码编译命令，使用生产环境profile，跳过测试
 # 自定义settings.xml, 选用国内镜像源以提高下载速度
-RUN mvn -s /app/settings.xml -f /app/pom.xml clean package -P prod -DskipTests
+# 清理Maven缓存以减小镜像大小
+RUN mvn -s /app/settings.xml -f /app/pom.xml clean package -P prod -DskipTests && \
+    rm -rf /root/.m2
 
-# 选择运行时基础镜像（使用更小的Eclipse Temurin JRE）
-FROM eclipse-temurin:17-jre-alpine
+# 选择运行时基础镜像（使用更小的Liberica OpenJRE Alpine镜像）
+FROM bellsoft/liberica-openjre-alpine-musl:17.0.12-1
 
 # 设置时区为上海
 RUN apk add --no-cache tzdata \

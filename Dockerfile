@@ -14,7 +14,7 @@ RUN mvn dependency:go-offline -P prod -B
 RUN mvn clean package -P prod -DskipTests -Dmaven.test.skip=true -q
 
 # 运行阶段 - 使用最小的JRE镜像
-FROM eclipse-temurin:17-jre-alpine
+FROM adoptopenjdk/openjdk11:alpine-slim
 
 # 设置时区
 RUN apk add --no-cache tzdata && \

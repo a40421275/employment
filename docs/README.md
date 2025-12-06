@@ -24,6 +24,9 @@ spring.jpa.hibernate.ddl-auto=update
 ### API 测试指南
 - [API 测试指南索引](api-test-guide-index.md) - 完整的API测试指南和快速开始
 
+### 前端设计方案
+- [首页功能设计方案](homepage-design.md) - 首页功能优化和智能推荐设计方案
+
 ## 模块文档
 
 ### 核心模块
